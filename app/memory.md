@@ -49,13 +49,26 @@ app/
     │
     ├── core/
     │   ├── database/
-    │   │   ├── AppDatabase.kt        ← Room DB (v1, entity: UserEntity)
-    │   │   ├── DatabaseCallback.kt   ← Seeder: insert user "admin" (SHA-256)
-    │   │   └── dao/UserDao.kt        ← insertUser, findByUsername, countUsers
-    │   │   └── entity/UserEntity.kt  ← @Entity("users"): id, username, passwordHash
+    │   │   ├── AppDatabase.kt        ← Room DB (v2: User, Arsip, Berkas, BA, Penandatangan, Log)
+    │   │   ├── DatabaseCallback.kt   ← Seeder: admin (SHA-256) & 10 initial archives
+    │   │   ├── dao/
+    │   │   │   ├── UserDao.kt
+    │   │   │   ├── ArsipDao.kt
+    │   │   │   ├── BerkasUsulMusnahDao.kt
+    │   │   │   ├── BeritaAcaraDao.kt
+    │   │   │   ├── PenandatanganDao.kt
+    │   │   │   └── AuditLogDao.kt
+    │   │   └── entity/
+    │   │       ├── UserEntity.kt
+    │   │       ├── ArsipEntity.kt
+    │   │       ├── BerkasUsulMusnahEntity.kt
+    │   │       ├── BeritaAcaraEntity.kt
+    │   │       ├── PenandatanganEntity.kt
+    │   │       └── AuditLogEntity.kt
     │   ├── di/
-    │   │   ├── DatabaseModule.kt     ← @Singleton AppDatabase + UserDao
-    │   │   └── AuthModule.kt         ← @Binds AuthRepository → AuthRepositoryImpl
+    │   │   ├── DatabaseModule.kt     ← @Singleton AppDatabase & all DAOs
+    │   │   ├── AuthModule.kt         ← @Binds AuthRepository → AuthRepositoryImpl
+    │   │   └── ArsipModule.kt        ← @Binds ArsipRepository → ArsipRepositoryImpl
     │   └── navigation/
     │       ├── Screen.kt             ← sealed class semua routes
     │       ├── SiArsipNavGraph.kt    ← NavHost + semua composable route
@@ -71,6 +84,15 @@ app/
     │   │   └── usecase/LoginUseCase.kt       ← validasi + call repo.login()
     │   └── presentation/
     │       └── LoginViewModel.kt             ← UI State & invoke LoginUseCase
+    │
+    ├── feature/arsip/
+    │   ├── data/
+    │   │   ├── mapper/ArsipMapper.kt         ← Entity ↔ Domain mapper
+    │   │   └── repository/ArsipRepositoryImpl.kt  ← implements ArsipRepository
+    │   └── domain/
+    │       ├── model/                        ← Arsip, BerkasUsulMusnah, BeritaAcara, Penandatangan, AuditLog
+    │       ├── repository/ArsipRepository.kt ← Domain repository interface
+    │       └── usecase/                      ← UseCases: GetAvailable, GetProposals, CreateProposal, UpdateStatus, CreateBA
     │
     └── ui/
         ├── components/
@@ -179,6 +201,73 @@ RepositoryImpl
 
 > ✅ Catatan: `AuthRepositoryImpl` memverifikasi input password menggunakan SHA-256 hash.
 
+### `archives` table (ArsipEntity)
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | String | PK (UUID v4) |
+| `kode` | String | Kode klasifikasi (JRA) |
+| `fullKode` | String | Kode/nomor arsip lengkap |
+| `deskripsi` | String | Isi ringkas informasi |
+| `tahun` | String | Kurun waktu pembuatan |
+| `tingkat` | String | Tingkat perkembangan (Asli/Copy) |
+| `volume` | String | Volume fisik |
+| `retensiAktif` | String | Jangka waktu retensi aktif |
+| `retensiInaktif` | String | Jangka waktu retensi inaktif |
+| `keterangan` | String | Status akhir (Musnah/Permanen) |
+| `sumber` | String | Sumber modul asal |
+| `status` | String | State (AVAILABLE, PROPOSED, VERIFIED, APPROVED, DISPOSED) |
+| `proposalId` | String? | FK ke proposals (nullable) |
+| `beritaAcaraId` | String? | FK ke berita_acara (nullable) |
+| `disposedAt` | String? | Timestamp pemusnahan (nullable) |
+
+### `proposals` table (BerkasUsulMusnahEntity)
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | String | PK (UUID v4) |
+| `nomorBerkas` | String | Nomor usulan berkas |
+| `tanggal` | String | Tanggal usulan |
+| `unitPengolah` | String | Instansi unit pengolah |
+| `sumberModul` | String | Sumber modul JRA |
+| `perihal` | String | Uraian perihal berkas |
+| `status` | String | State (PROPOSED, VERIFIED, APPROVED, DISPOSED) |
+| `createdAt` | Long | Unix timestamp pembuatan |
+
+### `berita_acara` table (BeritaAcaraEntity)
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | String | PK (UUID v4) |
+| `nomorBa` | String | Nomor Berita Acara (BA) |
+| `tanggalEksekusi` | String | Tanggal pemusnahan fisik |
+| `penanggungJawab` | String | Petugas penanggung jawab |
+| `saksi1` | String | Nama saksi pertama |
+| `saksi2` | String? | Nama saksi kedua (optional) |
+| `keterangan` | String? | Catatan tambahan |
+| `createdAt` | Long | Unix timestamp pembuatan |
+
+### `penandatangan` table (PenandatanganEntity)
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | String | PK (UUID v4) |
+| `beritaAcaraId` | String | FK ke berita_acara (Cascade) |
+| `nama` | String | Nama penandatangan |
+| `jabatan` | String | Jabatan dinas |
+| `role` | String | Role (PENANGGUNG_JAWAB, SAKSI_1, SAKSI_2) |
+| `urutan` | Int | Urutan tanda tangan |
+
+### `audit_logs` table (AuditLogEntity)
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | String | PK (UUID v4) |
+| `action` | String | Jenis aksi (CREATE_PROPOSAL, UPDATE_STATUS, etc) |
+| `actorId` | String | Username pelaku aksi |
+| `archiveId` | String? | Referensi arsip (optional) |
+| `proposalId` | String? | Referensi berkas usul (optional) |
+| `beritaAcaraId` | String? | Referensi berita acara (optional) |
+| `previousStatus` | String? | Status sebelum aksi (optional) |
+| `newStatus` | String? | Status sesudah aksi (optional) |
+| `notes` | String? | Keterangan detail log |
+| `timestamp` | Long | Unix timestamp kejadian |
+
 ---
 
 ## 8. Database Schema Target (Supabase / PostgreSQL)
@@ -233,8 +322,8 @@ data class DisposeArchivePayload(
 | Pengaturan | 🔲 Placeholder | Belum ada screen asli |
 | Auth ViewModel | ✅ Selesai | Mengelola State & terhubung ke UseCase |
 | Supabase Integration | 🔲 Belum ada | Dependency belum ditambahkan |
-| State Machine Logic | 🔲 Belum ada | UseCase belum dibuat |
-| Audit Log | 🔲 Belum ada | Butuh tabel + repo |
+| State Machine Logic | ✅ Selesai | Validasi state di UseCase (UpdateStatus & CreateBA) |
+| Audit Log | ✅ Selesai | Tabel Room audit_logs + pencatatan log fleksibel |
 
 ---
 
@@ -283,11 +372,9 @@ Data dummy di-declare di dalam file screen masing-masing.
 ## 13. To-Do Teknis Berikutnya (Prioritas)
 
 1. **Tambah dependency Supabase** ke `build.gradle.kts`
-2. **Buat entitas Room** untuk: ArsipDocument, BerkasUsulMusnah, BeritaAcara, AuditLog
-3. **Implement UseCase**: GetEligibleDisposalArchivesUseCase, ProposeArchiveUseCase, dll.
-4. **Replace dummy data** dengan Room Flow di setiap screen
-5. **Buat screen Profil** & **Pengaturan** menggantikan PlaceholderScreen
-6. **Tambah strings.xml** untuk terminologi pemerintahan
+2. **Replace dummy data** dengan Room Flow di setiap screen
+3. **Buat screen Profil** & **Pengaturan** menggantikan PlaceholderScreen
+4. **Tambah strings.xml** untuk terminologi pemerintahan
 
 ---
 
