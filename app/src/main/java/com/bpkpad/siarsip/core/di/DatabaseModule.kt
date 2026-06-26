@@ -21,16 +21,14 @@ object DatabaseModule {
     fun provideAppDatabase(
         @ApplicationContext context: Context
     ): AppDatabase {
-        lateinit var database: AppDatabase
-        database = Room.databaseBuilder(
+        return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
             "siarsip_database"
         )
-        .addCallback(DatabaseCallback { database })
+        .addCallback(DatabaseCallback())
         .fallbackToDestructiveMigration()
         .build()
-        return database
     }
 
     @Provides
