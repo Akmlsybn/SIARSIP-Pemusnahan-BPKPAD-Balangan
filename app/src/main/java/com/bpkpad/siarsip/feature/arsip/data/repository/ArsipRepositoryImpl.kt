@@ -63,13 +63,13 @@ class ArsipRepositoryImpl @Inject constructor(
     }
 
     override fun getAllBeritaAcara(): Flow<List<BeritaAcara>> {
-        return beritaAcaraDao.getAllBeritaAcara()
+        return beritaAcaraDao.getAllBeritaAcaraWithRelations()
             .map { entities -> entities.map { it.toDomain() } }
             .flowOn(Dispatchers.IO)
     }
 
     override fun getBeritaAcaraById(id: String): Flow<BeritaAcara?> {
-        return beritaAcaraDao.getBeritaAcaraById(id)
+        return beritaAcaraDao.getBeritaAcaraWithRelationsById(id)
             .map { entity -> entity?.toDomain() }
             .flowOn(Dispatchers.IO)
     }

@@ -75,6 +75,12 @@ fun BeritaAcaraEntity.toDomain(signatories: List<Penandatangan> = emptyList(), a
     archives = archives
 )
 
+fun BeritaAcaraWithRelations.toDomain(): BeritaAcara = beritaAcara.toDomain(
+    signatories = signatories.sortedBy { it.urutan }.map { it.toDomain() },
+    archives = archives.map { it.toDomain() }
+)
+
+
 fun BeritaAcara.toEntity(): BeritaAcaraEntity = BeritaAcaraEntity(
     id = id,
     nomorBa = nomorBa,

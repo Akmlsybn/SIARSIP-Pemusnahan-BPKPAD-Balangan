@@ -23,7 +23,6 @@ import com.bpkpad.siarsip.ui.screens.pemusnahan.DetailBeritaAcaraScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.DetailBerkasUsulMusnahScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.LogRiwayatScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.StatusTrackingScreen
-import com.bpkpad.siarsip.ui.screens.pemusnahan.dummyBeritaAcaraList
 import com.bpkpad.siarsip.ui.screens.pemusnahan.dummyBerkasDetail
 
 /**
@@ -128,13 +127,8 @@ fun SiArsipNavGraph(
             )
         }
 
-        composable(Screen.DetailBeritaAcara.route) { backStackEntry ->
-            val baId = backStackEntry.arguments
-                ?.getString("baId")?.toIntOrNull()
-            val ba = dummyBeritaAcaraList.firstOrNull { it.id == baId }
-                ?: dummyBeritaAcaraList.first()
+        composable(Screen.DetailBeritaAcara.route) {
             DetailBeritaAcaraScreen(
-                ba = ba,
                 onBack = { navController.popBackStack() },
                 onUnduhPdf = { /* TODO */ },
                 onLihatArsip = { navController.navigate(Screen.DaftarArsip.route) },

@@ -23,88 +23,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.core.utils.ResultState
+import com.bpkpad.siarsip.feature.arsip.domain.model.BeritaAcaraItem
+import com.bpkpad.siarsip.feature.arsip.presentation.BeritaAcaraViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
-
-// ─────────────────────────────────────────────────────────────
-//  Data Model
-// ─────────────────────────────────────────────────────────────
-data class Penandatangan(
-    val nama: String,
-    val jabatan: String,
-    val role: String
-)
-
-data class BeritaAcara(
-    val id: Int,
-    val nomor: String,
-    val berkasNomor: String,
-    val perihal: String,
-    val tanggal: String,
-    val tanggalShort: String,
-    val lokasi: String,
-    val metode: String,
-    val jumlahArsip: Int,
-    val sumber: String,
-    val tahun: String,
-    val penandatangan: List<Penandatangan>
-)
-
-// ─────────────────────────────────────────────────────────────
-//  Dummy Data
-// ─────────────────────────────────────────────────────────────
-val dummyBeritaAcaraList = listOf(
-    BeritaAcara(
-        id = 1, nomor = "BA/PMS/2025/003", berkasNomor = "BUM-2025-001",
-        perihal = "Pemusnahan dokumen peminjaman arsip tahun 2017",
-        tanggal = "15 April 2025", tanggalShort = "15\nAPR\n2025",
-        lokasi = "Kantor BPKPAD Balangan", metode = "Pencacahan (Shredding)",
-        jumlahArsip = 4, sumber = "Peminjaman", tahun = "2025",
-        penandatangan = listOf(
-            Penandatangan("Drs. Bambang Setiawan", "Kepala BPKPAD", "Ketua Tim"),
-            Penandatangan("Hj. Budi Rahmawati, S.E.", "Kabid Aset", "Saksi 1"),
-            Penandatangan("Cici Andriani, S.IP.", "Arsiparis", "Saksi 2"),
-            Penandatangan("Dedi Kurniawan", "Staf Arsip", "Tim Pemusnah")
-        )
-    ),
-    BeritaAcara(
-        id = 2, nomor = "BA/PMS/2025/002", berkasNomor = "BUM-2024-018",
-        perihal = "Pemusnahan dokumen SP2D keuangan tahun 2015",
-        tanggal = "12 Maret 2025", tanggalShort = "12\nMAR\n2025",
-        lokasi = "Kantor BPKPAD Balangan", metode = "Pencacahan (Shredding)",
-        jumlahArsip = 18, sumber = "Keuangan", tahun = "2025",
-        penandatangan = listOf(
-            Penandatangan("Drs. Bambang Setiawan", "Kepala BPKPAD", "Ketua Tim"),
-            Penandatangan("Eko Prasetyo, S.E.", "Kabid Keuangan", "Saksi 1"),
-            Penandatangan("Fitri Yuliana", "Arsiparis", "Saksi 2")
-        )
-    ),
-    BeritaAcara(
-        id = 3, nomor = "BA/PMS/2025/001", berkasNomor = "BUM-2024-015",
-        perihal = "Pemusnahan SK kepegawaian periode 2014-2015",
-        tanggal = "5 Februari 2025", tanggalShort = "05\nFEB\n2025",
-        lokasi = "Kantor BPKPAD Balangan", metode = "Pembakaran",
-        jumlahArsip = 24, sumber = "Non-Keuangan", tahun = "2025",
-        penandatangan = listOf(
-            Penandatangan("Drs. Bambang Setiawan", "Kepala BPKPAD", "Ketua Tim"),
-            Penandatangan("Hj. Budi Rahmawati, S.E.", "Kabid Aset", "Saksi 1")
-        )
-    ),
-    BeritaAcara(
-        id = 4, nomor = "BA/PMS/2024/012", berkasNomor = "BUM-2024-009",
-        perihal = "Pemusnahan dokumen perjalanan dinas 2013",
-        tanggal = "20 Desember 2024", tanggalShort = "20\nDES\n2024",
-        lokasi = "Kantor BPKPAD Balangan", metode = "Pencacahan (Shredding)",
-        jumlahArsip = 8, sumber = "Keuangan", tahun = "2024",
-        penandatangan = listOf(
-            Penandatangan("Drs. Bambang Setiawan", "Kepala BPKPAD", "Ketua Tim"),
-            Penandatangan("Galih Pratama, S.Sos.", "Kabid Umum", "Saksi 1"),
-            Penandatangan("Hesti Rahayu", "Arsiparis", "Saksi 2")
-        )
-    )
-)
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
@@ -112,7 +38,8 @@ val dummyBeritaAcaraList = listOf(
 @Composable
 fun BeritaAcaraScreen(
     onNavigate: (String) -> Unit = {},
-    onCardClick: (BeritaAcara) -> Unit = {}
+    onCardClick: (BeritaAcaraItem) -> Unit = {},
+    viewModel: BeritaAcaraViewModel = hiltViewModel()
 ) {
     var searchQuery  by remember { mutableStateOf("") }
     var activeFilter by remember { mutableStateOf("Semua") }
@@ -122,17 +49,7 @@ fun BeritaAcaraScreen(
 
     val filters = listOf("Semua", "2025", "2024", "2023")
 
-    val filteredList = dummyBeritaAcaraList.filter { ba ->
-        val matchFilter = activeFilter == "Semua" || ba.tahun == activeFilter
-        val matchSearch = searchQuery.isBlank() ||
-                ba.nomor.contains(searchQuery, ignoreCase = true) ||
-                ba.berkasNomor.contains(searchQuery, ignoreCase = true) ||
-                ba.perihal.contains(searchQuery, ignoreCase = true)
-        matchFilter && matchSearch
-    }
-
-    val countTahunIni = dummyBeritaAcaraList.count { it.tahun == "2025" }
-    val totalArsip    = dummyBeritaAcaraList.sumOf { it.jumlahArsip }
+    val uiState by viewModel.uiState.collectAsState()
 
     ModalNavigationDrawer(
         drawerState   = drawerState,
@@ -159,73 +76,110 @@ fun BeritaAcaraScreen(
                 BATopBar(onMenuClick = { scope.launch { drawerState.open() } })
             }
         ) { padding ->
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(
-                    start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        BAStatBox("${dummyBeritaAcaraList.size}", "Total BA",
-                            Icons.Filled.Description, CardWhite, TextHead, Modifier.weight(1f))
-                        BAStatBox("$countTahunIni", "Tahun Ini",
-                            Icons.Filled.CalendarMonth, GreenLight, GreenPrimary, Modifier.weight(1f))
-                        BAStatBox("$totalArsip", "Arsip Musnah",
-                            Icons.Filled.LocalFireDepartment, AmberBg, AmberText, Modifier.weight(1f))
+            when (val state = uiState) {
+                is ResultState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = GreenPrimary)
                     }
                 }
+                is ResultState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Gagal memuat data: ${state.exception.message}",
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+                is ResultState.Success -> {
+                    val beritaAcaraList = state.data
+                    val filteredList = beritaAcaraList.filter { ba ->
+                        val matchFilter = activeFilter == "Semua" || ba.tahun == activeFilter
+                        val matchSearch = searchQuery.isBlank() ||
+                                ba.nomor.contains(searchQuery, ignoreCase = true) ||
+                                ba.berkasNomor.contains(searchQuery, ignoreCase = true) ||
+                                ba.perihal.contains(searchQuery, ignoreCase = true)
+                        matchFilter && matchSearch
+                    }
 
-                item {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = {
-                            Text("Cari nomor BA, berkas, atau perihal...",
-                                fontSize = 13.sp, color = TextHint)
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Filled.Search, null,
-                                tint = TextHint, modifier = Modifier.size(20.dp))
-                        },
-                        trailingIcon = if (searchQuery.isNotEmpty()) {
-                            {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Filled.Close, null,
-                                        tint = TextHint, modifier = Modifier.size(18.dp))
+                    val countTahunIni = beritaAcaraList.count { it.tahun == "2025" }
+                    val totalArsip    = beritaAcaraList.sumOf { it.jumlahArsip }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentPadding = PaddingValues(
+                            start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                BAStatBox("${beritaAcaraList.size}", "Total BA",
+                                    Icons.Filled.Description, CardWhite, TextHead, Modifier.weight(1f))
+                                BAStatBox("$countTahunIni", "Tahun Ini",
+                                    Icons.Filled.CalendarMonth, GreenLight, GreenPrimary, Modifier.weight(1f))
+                                BAStatBox("$totalArsip", "Arsip Musnah",
+                                    Icons.Filled.LocalFireDepartment, AmberBg, AmberText, Modifier.weight(1f))
+                            }
+                        }
+
+                        item {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = {
+                                    Text("Cari nomor BA, berkas, atau perihal...",
+                                        fontSize = 13.sp, color = TextHint)
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Search, null,
+                                        tint = TextHint, modifier = Modifier.size(20.dp))
+                                },
+                                trailingIcon = if (searchQuery.isNotEmpty()) {
+                                    {
+                                        IconButton(onClick = { searchQuery = "" }) {
+                                            Icon(Icons.Filled.Close, null,
+                                                tint = TextHint, modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                } else null,
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = baFieldColors(),
+                                modifier = Modifier.fillMaxWidth().height(48.dp)
+                            )
+                        }
+
+                        item {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                items(filters) { filter ->
+                                    BAFilterChip(
+                                        label = filter,
+                                        isActive = activeFilter == filter,
+                                        onClick = { activeFilter = filter }
+                                    )
                                 }
                             }
-                        } else null,
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = baFieldColors(),
-                        modifier = Modifier.fillMaxWidth().height(48.dp)
-                    )
-                }
+                        }
 
-                item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        items(filters) { filter ->
-                            BAFilterChip(
-                                label = filter,
-                                isActive = activeFilter == filter,
-                                onClick = { activeFilter = filter }
+                        item {
+                            Text("Menampilkan ${filteredList.size} berita acara",
+                                fontSize = 11.sp, color = TextHint)
+                        }
+
+                        items(filteredList, key = { it.id }) { ba ->
+                            BeritaAcaraCard(
+                                ba = ba,
+                                onClick = { onCardClick(ba) }
                             )
                         }
                     }
-                }
-
-                item {
-                    Text("Menampilkan ${filteredList.size} berita acara",
-                        fontSize = 11.sp, color = TextHint)
-                }
-
-                items(filteredList, key = { it.id }) { ba ->
-                    BeritaAcaraCard(
-                        ba = ba,
-                        onClick = { onCardClick(ba) }
-                    )
                 }
             }
         }
@@ -325,7 +279,7 @@ private fun BAFilterChip(
 // ─────────────────────────────────────────────────────────────
 @Composable
 private fun BeritaAcaraCard(
-    ba: BeritaAcara,
+    ba: BeritaAcaraItem,
     onClick: () -> Unit
 ) {
     Card(

@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +25,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.core.utils.ResultState
+import com.bpkpad.siarsip.feature.arsip.domain.model.BeritaAcaraItem
+import com.bpkpad.siarsip.feature.arsip.domain.model.Penandatangan
+import com.bpkpad.siarsip.feature.arsip.presentation.DetailBeritaAcaraViewModel
 import com.bpkpad.siarsip.ui.theme.*
 
 // ─────────────────────────────────────────────────────────────
@@ -30,12 +37,14 @@ import com.bpkpad.siarsip.ui.theme.*
 // ─────────────────────────────────────────────────────────────
 @Composable
 fun DetailBeritaAcaraScreen(
-    ba: BeritaAcara = dummyBeritaAcaraList[0],
     onBack: () -> Unit = {},
     onUnduhPdf: () -> Unit = {},
     onLihatArsip: () -> Unit = {},
-    onCetak: () -> Unit = {}
+    onCetak: () -> Unit = {},
+    viewModel: DetailBeritaAcaraViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         containerColor = BgDashboard,
         topBar = {
@@ -51,69 +60,94 @@ fun DetailBeritaAcaraScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(
-                start  = 16.dp,
-                end    = 16.dp,
-                top    = 14.dp,
-                bottom = 16.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-
-            // ── Hero Card — info utama ────────────────────────
-            item { HeroInfoCard(ba) }
-
-            // ── Section: Detail Pelaksanaan ──────────────────
-            item {
-                DetailSectionHeader(
-                    icon  = Icons.Filled.Info,
-                    title = "Detail Pelaksanaan"
-                )
-                Spacer(Modifier.height(8.dp))
-                DetailPelaksanaanCard(ba)
-            }
-
-            // ── Section: Penandatangan ───────────────────────
-            item {
-                DetailSectionHeader(
-                    icon  = Icons.Filled.Groups,
-                    title = "Penandatangan",
-                    badge = "${ba.penandatangan.size} orang"
-                )
-                Spacer(Modifier.height(8.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape    = RoundedCornerShape(16.dp),
-                    colors   = CardDefaults.cardColors(containerColor = CardWhite),
-                    border   = BorderStroke(1.dp, BorderGray)
+        when (val state = uiState) {
+            is ResultState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column {
-                        ba.penandatangan.forEachIndexed { index, p ->
-                            PenandatanganDetailRow(
-                                number = index + 1,
-                                p      = p,
-                                isLast = index == ba.penandatangan.lastIndex
-                            )
-                        }
-                    }
+                    CircularProgressIndicator(color = GreenPrimary)
                 }
             }
-
-            // ── Section: Audit Info ──────────────────────────
-            item {
-                DetailSectionHeader(
-                    icon  = Icons.Filled.Security,
-                    title = "Audit Trail"
-                )
-                Spacer(Modifier.height(8.dp))
-                AuditTrailCard(ba)
+            is ResultState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Gagal memuat detail Berita Acara: ${state.exception.message}",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 14.sp
+                    )
+                }
             }
+            is ResultState.Success -> {
+                val ba = state.data
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(
+                        start  = 16.dp,
+                        end    = 16.dp,
+                        top    = 14.dp,
+                        bottom = 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
 
-            item { Spacer(Modifier.height(8.dp)) }
+                    // ── Hero Card — info utama ────────────────────────
+                    item { HeroInfoCard(ba) }
+
+                    // ── Section: Detail Pelaksanaan ──────────────────
+                    item {
+                        DetailSectionHeader(
+                            icon  = Icons.Filled.Info,
+                            title = "Detail Pelaksanaan"
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        DetailPelaksanaanCard(ba)
+                    }
+
+                    // ── Section: Penandatangan ───────────────────────
+                    item {
+                        DetailSectionHeader(
+                            icon  = Icons.Filled.Groups,
+                            title = "Penandatangan",
+                            badge = "${ba.penandatangan.size} orang"
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape    = RoundedCornerShape(16.dp),
+                            colors   = CardDefaults.cardColors(containerColor = CardWhite),
+                            border   = BorderStroke(1.dp, BorderGray)
+                        ) {
+                            Column {
+                                ba.penandatangan.forEachIndexed { index, p ->
+                                    PenandatanganDetailRow(
+                                        number = index + 1,
+                                        p      = p,
+                                        isLast = index == ba.penandatangan.lastIndex
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Section: Audit Info ──────────────────────────
+                    item {
+                        DetailSectionHeader(
+                            icon  = Icons.Filled.Security,
+                            title = "Audit Trail"
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        AuditTrailCard(ba)
+                    }
+
+                    item { Spacer(Modifier.height(8.dp)) }
+                }
+            }
         }
     }
 }
@@ -216,7 +250,7 @@ private fun DetailBABottomBar(
 //  Hero Info Card
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun HeroInfoCard(ba: BeritaAcara) {
+private fun HeroInfoCard(ba: BeritaAcaraItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(16.dp),
@@ -340,7 +374,7 @@ private fun HeroInfoCard(ba: BeritaAcara) {
 //  Detail Pelaksanaan Card
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun DetailPelaksanaanCard(ba: BeritaAcara) {
+private fun DetailPelaksanaanCard(ba: BeritaAcaraItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(16.dp),
@@ -549,7 +583,7 @@ private fun PenandatanganDetailRow(
 //  Audit Trail Card
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun AuditTrailCard(ba: BeritaAcara) {
+private fun AuditTrailCard(ba: BeritaAcaraItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(16.dp),
@@ -665,5 +699,5 @@ private fun DetailSectionHeader(
 @Preview(showBackground = true, widthDp = 375, heightDp = 812)
 @Composable
 fun DetailBeritaAcaraPreview() {
-    DetailBeritaAcaraScreen()
+    // DetailBeritaAcaraScreen()
 }
