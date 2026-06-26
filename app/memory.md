@@ -64,11 +64,13 @@ app/
     ├── feature/auth/
     │   ├── data/
     │   │   ├── mapper/UserMapper.kt          ← UserEntity.toDomain()
-    │   │   └── repository/AuthRepositoryImpl.kt  ← login via Room (plaintext pw check)
-    │   └── domain/
-    │       ├── model/User.kt                 ← data class User(id, username)
-    │       ├── repository/AuthRepository.kt  ← interface: suspend login()
-    │       └── usecase/LoginUseCase.kt       ← validasi + call repo.login()
+    │   │   └── repository/AuthRepositoryImpl.kt  ← login via Room (SHA-256 pw hash check)
+    │   ├── domain/
+    │   │   ├── model/User.kt                 ← data class User(id, username)
+    │   │   ├── repository/AuthRepository.kt  ← interface: suspend login()
+    │   │   └── usecase/LoginUseCase.kt       ← validasi + call repo.login()
+    │   └── presentation/
+    │       └── LoginViewModel.kt             ← UI State & invoke LoginUseCase
     │
     └── ui/
         ├── components/
@@ -175,8 +177,7 @@ RepositoryImpl
 
 **Default user (seeder):** `admin` / `admin123` (hash SHA-256)
 
-> ⚠️ Catatan: `AuthRepositoryImpl` saat ini membandingkan `passwordHash` langsung (bukan hash),  
-> perlu fix: hash input password sebelum dibandingkan.
+> ✅ Catatan: `AuthRepositoryImpl` memverifikasi input password menggunakan SHA-256 hash.
 
 ---
 
@@ -218,7 +219,7 @@ data class DisposeArchivePayload(
 
 | Fitur | Status | Catatan |
 |-------|--------|---------|
-| Login Screen | ✅ UI selesai | Belum ada ViewModel/state hoisting |
+| Login Screen | ✅ UI selesai | Terhubung ke LoginViewModel & StateFlow |
 | Dashboard | ✅ UI selesai | Data dummy |
 | DaftarArsip Screen | ✅ UI selesai | Data dummy, tabel Excel + filter + kolom toggle |
 | DaftarUsulMusnah | ✅ UI selesai | Data dummy |
@@ -230,7 +231,7 @@ data class DisposeArchivePayload(
 | LogRiwayat | ✅ UI selesai | Data dummy, immutable |
 | Profil | 🔲 Placeholder | Belum ada screen asli |
 | Pengaturan | 🔲 Placeholder | Belum ada screen asli |
-| Auth ViewModel | 🔲 Belum ada | LoginScreen belum pakai ViewModel |
+| Auth ViewModel | ✅ Selesai | Mengelola State & terhubung ke UseCase |
 | Supabase Integration | 🔲 Belum ada | Dependency belum ditambahkan |
 | State Machine Logic | 🔲 Belum ada | UseCase belum dibuat |
 | Audit Log | 🔲 Belum ada | Butuh tabel + repo |
@@ -281,14 +282,12 @@ Data dummy di-declare di dalam file screen masing-masing.
 
 ## 13. To-Do Teknis Berikutnya (Prioritas)
 
-1. **Buat ViewModel + StateFlow** untuk LoginScreen (connect ke LoginUseCase yang sudah ada)
-2. **Fix bug auth**: hash input password sebelum dibandingkan di `AuthRepositoryImpl`
-3. **Tambah dependency Supabase** ke `build.gradle.kts`
-4. **Buat entitas Room** untuk: ArsipDocument, BerkasUsulMusnah, BeritaAcara, AuditLog
-5. **Implement UseCase**: GetEligibleDisposalArchivesUseCase, ProposeArchiveUseCase, dll.
-6. **Replace dummy data** dengan Room Flow di setiap screen
-7. **Buat screen Profil** & **Pengaturan** menggantikan PlaceholderScreen
-8. **Tambah strings.xml** untuk terminologi pemerintahan
+1. **Tambah dependency Supabase** ke `build.gradle.kts`
+2. **Buat entitas Room** untuk: ArsipDocument, BerkasUsulMusnah, BeritaAcara, AuditLog
+3. **Implement UseCase**: GetEligibleDisposalArchivesUseCase, ProposeArchiveUseCase, dll.
+4. **Replace dummy data** dengan Room Flow di setiap screen
+5. **Buat screen Profil** & **Pengaturan** menggantikan PlaceholderScreen
+6. **Tambah strings.xml** untuk terminologi pemerintahan
 
 ---
 

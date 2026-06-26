@@ -1,10 +1,18 @@
 package com.bpkpad.siarsip.core.navigation
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.bpkpad.siarsip.feature.auth.presentation.LoginViewModel
+import com.bpkpad.siarsip.feature.auth.presentation.LoginUiState
 import com.bpkpad.siarsip.ui.screens.auth.LoginScreen
 import com.bpkpad.siarsip.ui.screens.dashboard.DashboardScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.BeritaAcaraScreen
@@ -45,11 +53,29 @@ fun SiArsipNavGraph(
         startDestination = startDestination
     ) {
         composable(Screen.Login.route) {
-            LoginScreen(
-                onLoginClick = { _, _ ->
-                    navController.navigate(Screen.Dashboard.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
+            val viewModel: LoginViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+            val context = LocalContext.current
+
+            LaunchedEffect(uiState) {
+                when (uiState) {
+                    is LoginUiState.Success -> {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                        viewModel.resetState()
                     }
+                    is LoginUiState.Error -> {
+                        Toast.makeText(context, (uiState as LoginUiState.Error).message, Toast.LENGTH_SHORT).show()
+                        viewModel.resetState()
+                    }
+                    else -> {}
+                }
+            }
+
+            LoginScreen(
+                onLoginClick = { username, password ->
+                    viewModel.login(username, password)
                 },
                 onForgotPasswordClick = { /* TODO */ }
             )
