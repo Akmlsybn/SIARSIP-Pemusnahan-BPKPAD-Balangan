@@ -32,11 +32,10 @@ class UpdateProposalStatusUseCase @Inject constructor(
                 return Result.failure(Exception("Transisi status tidak valid: $currentStatus -> $newStatus"))
             }
 
-            // Update status in repo
-            repository.updateProposalStatus(proposalId, newStatus)
+            val auditLogs = mutableListOf<AuditLog>()
 
             // Log action for proposal
-            repository.insertAuditLog(
+            auditLogs.add(
                 AuditLog(
                     id = UUID.randomUUID().toString(),
                     action = "UPDATE_PROPOSAL_STATUS",
@@ -54,7 +53,7 @@ class UpdateProposalStatusUseCase @Inject constructor(
             // Log for each archive in the proposal
             val archives = repository.getArchivesByProposal(proposalId).first()
             for (archive in archives) {
-                repository.insertAuditLog(
+                auditLogs.add(
                     AuditLog(
                         id = UUID.randomUUID().toString(),
                         action = "ARCHIVE_STATUS_TRANSITION",
@@ -69,6 +68,9 @@ class UpdateProposalStatusUseCase @Inject constructor(
                     )
                 )
             }
+
+            // Update status and insert logs in repository transaction
+            repository.updateProposalStatus(proposalId, newStatus, auditLogs)
 
             Result.success(Unit)
         } catch (e: Exception) {

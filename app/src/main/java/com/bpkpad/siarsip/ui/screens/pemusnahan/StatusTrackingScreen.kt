@@ -1,5 +1,6 @@
 package com.bpkpad.siarsip.ui.screens.pemusnahan
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -24,108 +25,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.core.utils.ResultState
+import com.bpkpad.siarsip.feature.arsip.domain.usecase.TrackingBerkas
+import com.bpkpad.siarsip.feature.arsip.domain.usecase.TrackingStage
+import com.bpkpad.siarsip.feature.arsip.domain.usecase.StageStatus
+import com.bpkpad.siarsip.feature.arsip.presentation.StatusTrackingViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
-
-// ─────────────────────────────────────────────────────────────
-//  Data Model — Tahapan tracking
-// ─────────────────────────────────────────────────────────────
-enum class StageStatus { DONE, ACTIVE, PENDING, REJECTED }
-
-data class TrackingStage(
-    val name: String,
-    val description: String,
-    val person: String,
-    val date: String,
-    val status: StageStatus
-)
-
-data class TrackingBerkas(
-    val nomor: String,
-    val perihal: String,
-    val sumber: String,
-    val arsipCount: Int,
-    val stages: List<TrackingStage>
-) {
-    val currentStageIndex: Int
-        get() = stages.indexOfFirst { it.status == StageStatus.ACTIVE }
-            .takeIf { it >= 0 } ?: stages.indexOfLast { it.status == StageStatus.DONE }
-
-    val overallStatus: String
-        get() = when {
-            stages.any { it.status == StageStatus.REJECTED } -> "Ditolak"
-            stages.all { it.status == StageStatus.DONE }     -> "Selesai"
-            stages.any { it.status == StageStatus.ACTIVE }   -> "Diproses"
-            else                                              -> "Diajukan"
-        }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  Dummy Data
-// ─────────────────────────────────────────────────────────────
-val dummyTrackingList = listOf(
-    TrackingBerkas(
-        nomor      = "BUM-2025-003",
-        perihal    = "Pemusnahan arsip keuangan tahun 2016 yang telah habis retensi",
-        sumber     = "Keuangan",
-        arsipCount = 6,
-        stages = listOf(
-            TrackingStage("Berkas Dibuat", "Draft berkas usul musnah diinput",
-                "Ahmad Fauzi", "12 Mei 2025", StageStatus.DONE),
-            TrackingStage("Diajukan ke Tim Penilai", "Berkas dikirim untuk dinilai",
-                "Ahmad Fauzi", "13 Mei 2025", StageStatus.DONE),
-            TrackingStage("Penilaian Tim", "Sedang dinilai oleh Tim Penilai",
-                "Tim Penilai BPKPAD", "15 Mei 2025", StageStatus.ACTIVE),
-            TrackingStage("Pengiriman ke Kepala Daerah", "Disetujui dan dikirim",
-                "—", "—", StageStatus.PENDING),
-            TrackingStage("Pemusnahan & Berita Acara", "Pelaksanaan pemusnahan arsip",
-                "—", "—", StageStatus.PENDING)
-        )
-    ),
-    TrackingBerkas(
-        nomor      = "BUM-2025-002",
-        perihal    = "Pemusnahan SK kepegawaian tahun 2018",
-        sumber     = "Non-Keuangan",
-        arsipCount = 12,
-        stages = listOf(
-            TrackingStage("Berkas Dibuat", "Draft berkas usul musnah diinput",
-                "Ahmad Fauzi", "8 Mei 2025", StageStatus.DONE),
-            TrackingStage("Diajukan ke Tim Penilai", "Berkas dikirim untuk dinilai",
-                "Ahmad Fauzi", "9 Mei 2025", StageStatus.DONE),
-            TrackingStage("Penilaian Tim", "Tim Penilai setuju usul musnah",
-                "Tim Penilai BPKPAD", "11 Mei 2025", StageStatus.DONE),
-            TrackingStage("Pengiriman ke Kepala Daerah", "Menunggu persetujuan Bupati",
-                "Bupati Balangan", "12 Mei 2025", StageStatus.ACTIVE),
-            TrackingStage("Pemusnahan & Berita Acara", "Pelaksanaan pemusnahan arsip",
-                "—", "—", StageStatus.PENDING)
-        )
-    ),
-    TrackingBerkas(
-        nomor      = "BUM-2025-001",
-        perihal    = "Pemusnahan dokumen peminjaman 2017",
-        sumber     = "Peminjaman",
-        arsipCount = 4,
-        stages = listOf(
-            TrackingStage("Berkas Dibuat", "Draft berkas usul musnah diinput",
-                "Ahmad Fauzi", "1 Apr 2025", StageStatus.DONE),
-            TrackingStage("Diajukan ke Tim Penilai", "Berkas dikirim untuk dinilai",
-                "Ahmad Fauzi", "2 Apr 2025", StageStatus.DONE),
-            TrackingStage("Penilaian Tim", "Tim Penilai setuju usul musnah",
-                "Tim Penilai BPKPAD", "5 Apr 2025", StageStatus.DONE),
-            TrackingStage("Pengiriman ke Kepala Daerah", "Disetujui oleh Bupati",
-                "Bupati Balangan", "10 Apr 2025", StageStatus.DONE),
-            TrackingStage("Pemusnahan & Berita Acara", "Pemusnahan selesai dilaksanakan",
-                "Tim Pemusnahan", "15 Apr 2025", StageStatus.DONE)
-        )
-    )
-)
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
@@ -133,21 +48,39 @@ val dummyTrackingList = listOf(
 @Composable
 fun StatusTrackingScreen(
     onNavigate: (String) -> Unit = {},
-    onCatatBalasan: (TrackingBerkas) -> Unit = {}
+    viewModel: StatusTrackingViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val trackingState by viewModel.trackingList.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
+
+    val trackingList = (trackingState as? ResultState.Success)?.data ?: emptyList()
+
     var activeFilter   by remember { mutableStateOf("Semua") }
     var expandedNomor  by remember { mutableStateOf<String?>(null) }
+    var showUpdateDialogFor by remember { mutableStateOf<TrackingBerkas?>(null) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
 
     val filters = listOf("Semua", "Diproses", "Selesai", "Ditolak")
 
-    val filteredList = dummyTrackingList.filter { berkas ->
+    val filteredList = trackingList.filter { berkas ->
         activeFilter == "Semua" || berkas.overallStatus == activeFilter
     }
-    val countDiproses = dummyTrackingList.count { it.overallStatus == "Diproses" }
-    val countSelesai  = dummyTrackingList.count { it.overallStatus == "Selesai" }
+    val countDiproses = trackingList.count { it.overallStatus == "Diproses" }
+    val countSelesai  = trackingList.count { it.overallStatus == "Selesai" }
+
+    LaunchedEffect(updateState) {
+        if (updateState is ResultState.Error) {
+            Toast.makeText(context, (updateState as ResultState.Error).exception.message ?: "Gagal mengubah status berkas", Toast.LENGTH_LONG).show()
+            viewModel.resetUpdateState()
+        }
+        if (updateState is ResultState.Success && showUpdateDialogFor != null) {
+            showUpdateDialogFor = null
+            viewModel.resetUpdateState()
+        }
+    }
 
     // ── Drawer wrapper ────────────────────────────────────────
     ModalNavigationDrawer(
@@ -177,76 +110,182 @@ fun StatusTrackingScreen(
                 )
             }
         ) { padding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(
-                    start  = 16.dp,
-                    end    = 16.dp,
-                    top    = 14.dp,
-                    bottom = 16.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-
-                // ── Stats summary ────────────────────────────
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        TrackingStatBox(
-                            value    = "${dummyTrackingList.size}",
-                            label    = "Total Berkas",
-                            bgColor  = CardWhite,
-                            color    = TextHead,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TrackingStatBox(
-                            value    = "$countDiproses",
-                            label    = "Sedang Diproses",
-                            bgColor  = AmberBg,
-                            color    = AmberText,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TrackingStatBox(
-                            value    = "$countSelesai",
-                            label    = "Selesai",
-                            bgColor  = GreenLight,
-                            color    = GreenPrimary,
-                            modifier = Modifier.weight(1f)
+            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                when (val state = trackingState) {
+                    is ResultState.Loading -> {
+                        CircularProgressIndicator(
+                            color = GreenPrimary,
+                            modifier = Modifier.align(Alignment.Center)
                         )
                     }
-                }
-
-                // ── Filter chips ──────────────────────────────
-                item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        items(filters) { filter ->
-                            TrackingFilterChip(
-                                label    = filter,
-                                isActive = activeFilter == filter,
-                                onClick  = {
-                                    activeFilter  = filter
-                                    expandedNomor = null
-                                }
+                    is ResultState.Error -> {
+                        Text(
+                            text = state.exception.message ?: "Gagal memuat status tracking",
+                            color = DangerText,
+                            fontSize = 13.sp,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    is ResultState.Success -> {
+                        if (filteredList.isEmpty()) {
+                            Text(
+                                text = "Tidak ada berkas usul musnah terpantau",
+                                color = TextHint,
+                                fontSize = 13.sp,
+                                modifier = Modifier.align(Alignment.Center)
                             )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    start  = 16.dp,
+                                    end    = 16.dp,
+                                    top    = 14.dp,
+                                    bottom = 16.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // ── Stats summary ────────────────────────────
+                                item {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        TrackingStatBox(
+                                            value    = "${trackingList.size}",
+                                            label    = "Total Berkas",
+                                            bgColor  = CardWhite,
+                                            color    = TextHead,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        TrackingStatBox(
+                                            value    = "$countDiproses",
+                                            label    = "Sedang Diproses",
+                                            bgColor  = AmberBg,
+                                            color    = AmberText,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        TrackingStatBox(
+                                            value    = "$countSelesai",
+                                            label    = "Selesai",
+                                            bgColor  = GreenLight,
+                                            color    = GreenPrimary,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+
+                                // ── Filter chips ──────────────────────────────
+                                item {
+                                    LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                        items(filters) { filter ->
+                                            TrackingFilterChip(
+                                                label    = filter,
+                                                isActive = activeFilter == filter,
+                                                onClick  = {
+                                                    activeFilter  = filter
+                                                    expandedNomor = null
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // ── List of tracking berkas ───────────────────
+                                items(filteredList, key = { it.nomor }) { berkas ->
+                                    val isExpanded = expandedNomor == berkas.nomor
+                                    TrackingCard(
+                                        berkas         = berkas,
+                                        isExpanded     = isExpanded,
+                                        onToggle       = {
+                                            expandedNomor = if (isExpanded) null else berkas.nomor
+                                        },
+                                        onCatatBalasan = { showUpdateDialogFor = berkas }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-
-                // ── List of tracking berkas ───────────────────
-                items(filteredList, key = { it.nomor }) { berkas ->
-                    val isExpanded = expandedNomor == berkas.nomor
-                    TrackingCard(
-                        berkas         = berkas,
-                        isExpanded     = isExpanded,
-                        onToggle       = {
-                            expandedNomor = if (isExpanded) null else berkas.nomor
-                        },
-                        onCatatBalasan = { onCatatBalasan(berkas) }
-                    )
-                }
             }
         }
+    }
+
+    if (showUpdateDialogFor != null) {
+        val berkas = showUpdateDialogFor!!
+        val activeStage = berkas.stages.getOrNull(berkas.currentStageIndex)
+        val isUpdating = updateState is ResultState.Loading
+
+        AlertDialog(
+            onDismissRequest = { if (!isUpdating) showUpdateDialogFor = null },
+            title = { Text("Update Status / Catat Balasan", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Nomor Berkas: ${berkas.nomor}", fontSize = 12.sp, color = TextHint)
+                    Text("Perihal: ${berkas.perihal}", fontSize = 12.sp, color = TextHead)
+                    Spacer(Modifier.height(4.dp))
+                    if (activeStage != null && activeStage.status == StageStatus.ACTIVE) {
+                        Text("Tahap Aktif saat ini:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
+                        Text(activeStage.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextHead)
+                        Text(activeStage.description, fontSize = 12.sp, color = TextBody)
+                    } else {
+                        Text("Semua tahapan proses telah selesai.", fontSize = 12.sp, color = TextBody)
+                    }
+                }
+            },
+            confirmButton = {
+                if (activeStage != null && activeStage.status == StageStatus.ACTIVE) {
+                    when (activeStage.name) {
+                        "Penilaian Tim" -> {
+                            Button(
+                                onClick = {
+                                    viewModel.updateProposalStatus(berkas.proposalId, "VERIFIED")
+                                },
+                                enabled = !isUpdating,
+                                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                            ) {
+                                if (isUpdating) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Text("Verifikasi (Setuju Usulan)")
+                                }
+                            }
+                        }
+                        "Pengiriman ke Kepala Daerah" -> {
+                            Button(
+                                onClick = {
+                                    viewModel.updateProposalStatus(berkas.proposalId, "APPROVED")
+                                },
+                                enabled = !isUpdating,
+                                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                            ) {
+                                if (isUpdating) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Text("Setujui (Tanda Tangan Bupati)")
+                                }
+                            }
+                        }
+                        "Pemusnahan & Berita Acara" -> {
+                            Button(
+                                onClick = {
+                                    showUpdateDialogFor = null
+                                    onNavigate("berita_acara") // Navigate to Berita Acara
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                            ) {
+                                Text("Buat Berita Acara")
+                            }
+                        }
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showUpdateDialogFor = null },
+                    enabled = !isUpdating
+                ) {
+                    Text("Tutup")
+                }
+            }
+        )
     }
 }
 

@@ -91,7 +91,7 @@ class CreateBeritaAcaraUseCase @Inject constructor(
 
             // Execute in repository
             repository.insertBeritaAcara(beritaAcara, archiveIds, signatories)
-            repository.updateProposalStatus(proposalId, "DISPOSED")
+            repository.updateProposalStatus(proposalId, "DISPOSED", emptyList())
 
             // Log Berita Acara creation
             repository.insertAuditLog(

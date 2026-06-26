@@ -100,9 +100,18 @@ class ArsipRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateProposalStatus(proposalId: String, status: String) = withContext(Dispatchers.IO) {
-        berkasUsulMusnahDao.updateProposalStatus(proposalId, status)
-        arsipDao.updateArchivesStatusByProposal(proposalId, status)
+    override suspend fun updateProposalStatus(
+        proposalId: String,
+        status: String,
+        auditLogs: List<AuditLog>
+    ) = withContext(Dispatchers.IO) {
+        appDatabase.withTransaction {
+            berkasUsulMusnahDao.updateProposalStatus(proposalId, status)
+            arsipDao.updateArchivesStatusByProposal(proposalId, status)
+            for (log in auditLogs) {
+                auditLogDao.insertAuditLog(log.toEntity())
+            }
+        }
     }
 
     override suspend fun insertBeritaAcara(

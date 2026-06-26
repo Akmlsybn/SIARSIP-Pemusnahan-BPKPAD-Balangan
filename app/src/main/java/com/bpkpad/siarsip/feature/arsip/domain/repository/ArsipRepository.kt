@@ -15,7 +15,7 @@ interface ArsipRepository {
     fun getAllAuditLogs(): Flow<List<AuditLog>>
     
     suspend fun insertProposal(proposal: BerkasUsulMusnah, archiveIds: List<String>, auditLogs: List<AuditLog>)
-    suspend fun updateProposalStatus(proposalId: String, status: String)
+    suspend fun updateProposalStatus(proposalId: String, status: String, auditLogs: List<AuditLog>)
     suspend fun insertBeritaAcara(beritaAcara: BeritaAcara, archiveIds: List<String>, signatories: List<Penandatangan>)
     suspend fun insertAuditLog(log: AuditLog)
 }

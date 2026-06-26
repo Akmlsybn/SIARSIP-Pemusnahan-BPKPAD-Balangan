@@ -94,11 +94,12 @@ app/
     │   ├── domain/
     │   │   ├── model/                        ← Arsip, BerkasUsulMusnah, BeritaAcara, Penandatangan, AuditLog
     │   │   ├── repository/ArsipRepository.kt ← Domain repository interface
-    │   │   └── usecase/                      ← UseCases: GetAvailable, GetProposals, CreateProposal, UpdateStatus, CreateBA
+    │   │   └── usecase/                      ← UseCases: GetAvailable, GetProposals, CreateProposal, UpdateStatus, CreateBA, GetTrackingInfo
     │   └── presentation/
     │       ├── DaftarArsipViewModel.kt       ← Exposes uiState: StateFlow<ResultState<List<Arsip>>>
     │       ├── DaftarUsulMusnahViewModel.kt  ← Exposes uiState: StateFlow<ResultState<List<BerkasUsulMusnah>>>
-    │       └── BuatBerkasUsulMusnahViewModel.kt ← Exposes availableArchives, nextProposalNumber, and saveState
+    │       ├── BuatBerkasUsulMusnahViewModel.kt ← Exposes availableArchives, nextProposalNumber, and saveState
+    │       └── StatusTrackingViewModel.kt     ← Exposes trackingList: StateFlow<ResultState<List<TrackingBerkas>>>
     │
     └── ui/
         ├── components/
@@ -320,7 +321,7 @@ data class DisposeArchivePayload(
 | DaftarUsulMusnah | ✅ Selesai | Terhubung ke DaftarUsulMusnahViewModel & Room DB |
 | BuatBerkasUsulMusnah | ✅ Selesai | Terhubung ke BuatBerkasUsulMusnahViewModel, Room DB & transaksi creation proposal |
 | DetailBerkasUsulMusnah | ✅ UI selesai | Menggunakan domain model Arsip (siap dihubungkan) |
-| StatusTracking | ✅ UI selesai | Timeline dummy |
+| StatusTracking | ✅ Selesai | Terhubung ke StatusTrackingViewModel, GetTrackingInfoUseCase & dialog Catat Balasan |
 | BeritaAcara | ✅ UI selesai | Data dummy |
 | DetailBeritaAcara | ✅ UI selesai | Data dummy |
 | LogRiwayat | ✅ UI selesai | Data dummy, immutable |

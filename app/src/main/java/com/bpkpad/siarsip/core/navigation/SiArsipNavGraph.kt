@@ -115,8 +115,7 @@ fun SiArsipNavGraph(
 
         composable(Screen.StatusTracking.route) {
             StatusTrackingScreen(
-                onNavigate = { route -> navController.navigateToRoute(route) },
-                onCatatBalasan = { /* TODO: buka form update status */ }
+                onNavigate = { route -> navController.navigateToRoute(route) }
             )
         }
 
