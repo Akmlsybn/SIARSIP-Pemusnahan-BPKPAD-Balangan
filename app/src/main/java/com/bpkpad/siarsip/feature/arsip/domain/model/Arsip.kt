@@ -13,7 +13,7 @@ data class Arsip(
     val keterangan: String,
     val sumber: String,
     val status: String,
-    val proposalId: String?,
-    val beritaAcaraId: String?,
-    val disposedAt: String?
+    val proposalId: String? = null,
+    val beritaAcaraId: String? = null,
+    val disposedAt: String? = null
 )

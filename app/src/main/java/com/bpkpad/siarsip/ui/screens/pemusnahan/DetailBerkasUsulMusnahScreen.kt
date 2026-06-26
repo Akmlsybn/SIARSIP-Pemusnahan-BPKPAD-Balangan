@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
 import com.bpkpad.siarsip.ui.theme.*
 
 // ─────────────────────────────────────────────────────────────
@@ -40,12 +41,29 @@ data class BerkasDetail(
     val perihal: String,
     val status: String,      // "Draft", "Diajukan", "Menunggu", "Disetujui", "Selesai"
     val tahapan: String,     // mis. "Tahap 3: Pengiriman ke Bupati"
-    val arsipList: List<ArsipItem>
+    val arsipList: List<Arsip>
 )
 
 // ─────────────────────────────────────────────────────────────
 //  Dummy Data
 // ─────────────────────────────────────────────────────────────
+val dummyArsipListLocal = listOf(
+    Arsip(
+        id = "1", kode = "KN.03.01", fullKode = "00001/SP2D/1.20.11.01/DPPKAD/2016",
+        deskripsi = "Gaji dan Tunjangan Pegawai Bulan Januari 2016",
+        tahun = "2016", tingkat = "Copy", volume = "1 Berkas",
+        retensiAktif = "2 Thn", retensiInaktif = "8 Thn", keterangan = "Musnah",
+        sumber = "Keuangan", status = "PROPOSED"
+    ),
+    Arsip(
+        id = "2", kode = "KN.03.01", fullKode = "00002/SP2D/1.20.05.01/DPPKAD/2016",
+        deskripsi = "Pembayaran Gaji Induk Bulan Januari 2016 Pegawai Dinas PPKAD",
+        tahun = "2016", tingkat = "Copy", volume = "1 Berkas",
+        retensiAktif = "2 Thn", retensiInaktif = "8 Thn", keterangan = "Musnah",
+        sumber = "Keuangan", status = "PROPOSED"
+    )
+)
+
 val dummyBerkasDetail = BerkasDetail(
     nomor        = "BUM-2025-003",
     tanggal      = "12 Mei 2025",
@@ -55,7 +73,7 @@ val dummyBerkasDetail = BerkasDetail(
             "habis masa retensinya berdasarkan Jadwal Retensi Arsip (JRA)",
     status       = "Menunggu",
     tahapan      = "Tahap 3 dari 5 — Pengiriman ke Bupati",
-    arsipList    = dummyArsipList.take(6)
+    arsipList    = dummyArsipListLocal
 )
 
 // ─────────────────────────────────────────────────────────────
@@ -68,7 +86,7 @@ fun DetailBerkasUsulMusnahScreen(
     onExportPdf: () -> Unit = {},
     onLihatTracking: () -> Unit = {}
 ) {
-    var expandedItemId by remember { mutableStateOf<Int?>(null) }
+    var expandedItemId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         containerColor = BgDashboard,
@@ -488,7 +506,7 @@ private fun BerkasInfoField(
 @Composable
 private fun DetailArsipRow(
     number: Int,
-    item: ArsipItem,
+    item: Arsip,
     isExpanded: Boolean,
     isLast: Boolean,
     onEyeClick: () -> Unit
@@ -607,7 +625,7 @@ private fun DetailArsipRow(
 //  Detail Panel (accordion content)
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun DetailArsipPanel(item: ArsipItem, onClose: () -> Unit) {
+private fun DetailArsipPanel(item: Arsip, onClose: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()

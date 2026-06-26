@@ -29,63 +29,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.core.utils.ResultState
+import com.bpkpad.siarsip.feature.arsip.domain.model.BerkasUsulMusnah
+import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
+import com.bpkpad.siarsip.feature.arsip.presentation.DaftarUsulMusnahViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
-
-// ─────────────────────────────────────────────────────────────
-//  Data Model
-// ─────────────────────────────────────────────────────────────
-data class ArsipItem(
-    val id: Int,
-    val kode: String,
-    val fullKode: String,
-    val deskripsi: String,
-    val tahun: String,
-    val tingkat: String,
-    val volume: String,
-    val retensiAktif: String,
-    val retensiInaktif: String,
-    val keterangan: String,  // "Musnah" atau "Permanen"
-    val sumber: String       // "Keuangan", "Non-Keuangan", "Peminjaman"
-)
-
-// ─────────────────────────────────────────────────────────────
-//  Dummy Data
-// ─────────────────────────────────────────────────────────────
-val dummyArsipList = listOf(
-    ArsipItem(1,  "KN.03.01", "00001/SP2D/1.20.11.01/DPPKAD/2016",
-        "Gaji dan Tunjangan Pegawai Bulan Januari 2016",
-        "2016", "Copy", "1 Berkas", "2 Thn", "8 Thn", "Musnah", "Keuangan"),
-    ArsipItem(2,  "KN.03.01", "00002/SP2D/1.20.05.01/DPPKAD/2016",
-        "Pembayaran Gaji Induk Bulan Januari 2016 Pegawai Dinas PPKAD",
-        "2016", "Copy", "1 Berkas", "2 Thn", "8 Thn", "Musnah", "Keuangan"),
-    ArsipItem(3,  "KN.03.02", "00003/SP2D/1.20.05.01/DPPKAD/2016",
-        "Pembayaran Kekurangan Gaji Bulan Januari 2016",
-        "2016", "Copy", "1 Berkas", "2 Thn", "8 Thn", "Musnah", "Keuangan"),
-    ArsipItem(4,  "KN.04.01", "00004/SP2D/1.07.01.01/DPPKAD/2016",
-        "Pembayaran Gaji dan Tunjangan PNS Dishubkominfo Kab. Balangan",
-        "2016", "Asli", "2 Berkas", "10 Thn", "Permanen", "Permanen", "Keuangan"),
-    ArsipItem(5,  "KN.01.02", "00005/KN.01.02/DAU/DPPKAD/2019",
-        "Dana Alokasi Umum Tahun 2019",
-        "2019", "Copy", "1 Berkas", "5 Thn", "8 Thn", "Musnah", "Keuangan"),
-    ArsipItem(6,  "NK.02.01", "00006/NK.02.01/PERDA/DPPKAD/2018",
-        "Peraturan Daerah No. 5 Tahun 2018",
-        "2018", "Asli", "1 Berkas", "10 Thn", "Permanen", "Permanen", "Non-Keuangan"),
-    ArsipItem(7,  "NK.05.10", "00007/NK.05.10/SRD/DPPKAD/2017",
-        "Surat Dinas Pendidikan Kabupaten Balangan 2017",
-        "2017", "Copy", "1 Berkas", "3 Thn", "5 Thn", "Musnah", "Non-Keuangan"),
-    ArsipItem(8,  "NK.03.05", "00008/NK.03.05/SK/DPPKAD/2018",
-        "SK Pegawai Bidang PPKAD Tahun 2018",
-        "2018", "Copy", "1 Berkas", "3 Thn", "5 Thn", "Musnah", "Non-Keuangan"),
-    ArsipItem(9,  "PM.01.03", "00009/PM.01.03/PJM/DPPKAD/2018",
-        "Arsip Peminjaman Dokumen 2018",
-        "2018", "Copy", "1 Berkas", "5 Thn", "8 Thn", "Musnah", "Peminjaman"),
-    ArsipItem(10, "PM.02.01", "00010/PM.02.01/DPM/DPPKAD/2019",
-        "Data Peminjaman Arsip Tahun 2019",
-        "2019", "Copy", "1 Berkas", "2 Thn", "3 Thn", "Musnah", "Peminjaman"),
-)
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
@@ -93,29 +45,35 @@ val dummyArsipList = listOf(
 @Composable
 fun DaftarUsulMusnahScreen(
     onBuatBerkas: () -> Unit = {},
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    viewModel: DaftarUsulMusnahViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val proposalsList = (uiState as? ResultState.Success)?.data ?: emptyList()
+
     var searchQuery    by remember { mutableStateOf("") }
     var activeFilter   by remember { mutableStateOf("Semua") }
     var activeYear     by remember { mutableStateOf("Semua") }
-    var expandedItemId by remember { mutableStateOf<Int?>(null) }
+    var expandedItemId by remember { mutableStateOf<String?>(null) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
     val filters = listOf("Semua", "Keuangan", "Non-Keuangan", "Peminjaman")
-    val years   = listOf("Semua", "2019", "2018", "2017", "2016")
+    val years   = listOf("Semua", "2026", "2025", "2019", "2018", "2017", "2016")
 
-    val filteredList = dummyArsipList.filter { item ->
-        val matchFilter = activeFilter == "Semua" || item.sumber == activeFilter
-        val matchYear   = activeYear == "Semua" || item.tahun == activeYear
+    val filteredList = proposalsList.filter { item ->
+        val itemYear = item.tanggal.substringAfterLast("/")
+        val matchFilter = activeFilter == "Semua" || item.sumberModul == activeFilter
+        val matchYear   = activeYear == "Semua" || itemYear == activeYear
         val matchSearch = searchQuery.isBlank() ||
-                item.kode.contains(searchQuery, ignoreCase = true) ||
-                item.deskripsi.contains(searchQuery, ignoreCase = true)
+                item.nomorBerkas.contains(searchQuery, ignoreCase = true) ||
+                item.perihal.contains(searchQuery, ignoreCase = true)
         matchFilter && matchYear && matchSearch
     }
 
-    val countMusnah   = filteredList.count { it.keterangan == "Musnah" }
-    val countPermanen = filteredList.count { it.keterangan == "Permanen" }
+    val allMatchingArchives = filteredList.flatMap { it.archives }
+    val countMusnah   = allMatchingArchives.count { it.keterangan == "Musnah" }
+    val countPermanen = allMatchingArchives.count { it.keterangan == "Permanen" }
 
     // ── Drawer wrapper ────────────────────────────────────────
     ModalNavigationDrawer(
@@ -290,18 +248,61 @@ fun DaftarUsulMusnahScreen(
                 }
 
                 // ── Archive rows ──────────────────────────────
-                items(filteredList, key = { it.id }) { item ->
-                    val isExpanded = expandedItemId == item.id
-                    val isLast     = filteredList.last().id == item.id
-
-                    ArchiveRowCard(
-                        item       = item,
-                        isExpanded = isExpanded,
-                        isLast     = isLast,
-                        onEyeClick = {
-                            expandedItemId = if (isExpanded) null else item.id
+                when (val state = uiState) {
+                    is ResultState.Loading -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = GreenPrimary)
+                            }
                         }
-                    )
+                    }
+                    is ResultState.Error -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = state.exception.message ?: "Terjadi kesalahan loading data",
+                                    color = DangerText,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+                    is ResultState.Success -> {
+                        if (filteredList.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Tidak ada berkas usul musnah",
+                                        color = TextHint,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        } else {
+                            items(filteredList, key = { it.id }) { item ->
+                                val isExpanded = expandedItemId == item.id
+                                val isLast     = filteredList.last().id == item.id
+
+                                ArchiveRowCard(
+                                    item       = item,
+                                    isExpanded = isExpanded,
+                                    isLast     = isLast,
+                                    onEyeClick = {
+                                        expandedItemId = if (isExpanded) null else item.id
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // ── Pagination ────────────────────────────────
@@ -512,7 +513,7 @@ private fun StatChip(
 // ─────────────────────────────────────────────────────────────
 @Composable
 private fun ArchiveRowCard(
-    item: ArsipItem,
+    item: BerkasUsulMusnah,
     isExpanded: Boolean,
     isLast: Boolean,
     onEyeClick: () -> Unit
@@ -551,12 +552,12 @@ private fun ArchiveRowCard(
                     verticalAlignment     = Alignment.CenterVertically,
                     modifier              = Modifier.padding(bottom = 5.dp)
                 ) {
-                    KodePill(item.kode)
-                    StatusBadge(item.keterangan)
+                    KodePill(item.nomorBerkas)
+                    StatusBadge(item.status)
                 }
                 // Baris 2: deskripsi
                 Text(
-                    text       = item.deskripsi,
+                    text       = item.perihal,
                     fontSize   = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color      = TextHead,
@@ -566,9 +567,9 @@ private fun ArchiveRowCard(
                 )
                 // Baris 3: chip meta
                 Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    MetaChip(Icons.Filled.CalendarToday, item.tahun)
-                    MetaChip(Icons.Filled.ContentCopy,   item.tingkat)
-                    MetaChip(Icons.Filled.Inventory2,    item.volume)
+                    MetaChip(Icons.Filled.CalendarToday, item.tanggal)
+                    MetaChip(Icons.Filled.Business,      item.unitPengolah)
+                    MetaChip(Icons.Filled.Inventory2,    "${item.archives.size} Arsip")
                 }
             }
 
@@ -624,7 +625,7 @@ private fun ArchiveRowCard(
 //  Detail Panel (accordion content)
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun DetailPanel(item: ArsipItem, onClose: () -> Unit) {
+private fun DetailPanel(item: BerkasUsulMusnah, onClose: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -652,7 +653,7 @@ private fun DetailPanel(item: ArsipItem, onClose: () -> Unit) {
                     .background(GreenPrimary, RoundedCornerShape(9999.dp))
             )
             Text(
-                "INFORMASI DETAIL",
+                "INFORMASI DETAIL BERKAS",
                 fontSize      = 11.sp,
                 fontWeight    = FontWeight.Bold,
                 color         = GreenPrimary,
@@ -686,67 +687,83 @@ private fun DetailPanel(item: ArsipItem, onClose: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             DetailField(
-                label      = "KODE KLASIFIKASI",
-                value      = item.fullKode,
+                label      = "NOMOR BERKAS",
+                value      = item.nomorBerkas,
                 valueColor = GreenPrimary,
                 modifier   = Modifier.weight(1f)
             )
             DetailField(
-                label    = "KURUN WAKTU",
-                value    = item.tahun,
+                label    = "TANGGAL BERKAS",
+                value    = item.tanggal,
                 modifier = Modifier.weight(1f)
             )
         }
 
         Spacer(Modifier.height(9.dp))
-        DetailField("ISI INFORMASI", item.deskripsi)
+        DetailField("PERIHAL", item.perihal)
 
         Spacer(Modifier.height(9.dp))
         Row(
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            DetailField("VOLUME", item.volume,   modifier = Modifier.weight(1f))
-            DetailField("TINGKAT PERKEMBANGAN", item.tingkat, modifier = Modifier.weight(1f))
+            DetailField("UNIT PENGOLAH", item.unitPengolah,   modifier = Modifier.weight(1f))
+            DetailField("SUMBER MODUL", item.sumberModul, modifier = Modifier.weight(1f))
         }
 
-        Spacer(Modifier.height(9.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // Retensi
+        // Daftar Arsip
         Text(
-            "RETENSI",
+            "DAFTAR ARSIP DI DALAM BERKAS",
             fontSize      = 9.sp,
             fontWeight    = FontWeight.Bold,
             color         = TextHint,
             letterSpacing = 0.7.sp,
             modifier      = Modifier.padding(bottom = 6.dp)
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            RetensiPill(Icons.Filled.Timer,   "Aktif: ${item.retensiAktif}")
-            RetensiPill(Icons.Filled.Archive, "Inaktif: ${item.retensiInaktif}")
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            item.archives.forEach { archive ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(CardWhite, RoundedCornerShape(8.dp))
+                        .border(0.5.dp, BorderGray, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(archive.fullKode, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
+                        Text(archive.deskripsi, fontSize = 11.sp, color = TextHead, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(archive.tahun, fontSize = 10.sp, color = TextHint)
+                }
+            }
         }
 
         // Separator
         HorizontalDivider(
-            modifier  = Modifier.padding(vertical = 10.dp),
-            thickness = 1.dp,
-            color     = GreenMid
+            modifier  = Modifier.padding(vertical = 12.dp),
+            thickness = 0.5.dp,
+            color     = BorderGray
         )
 
-        // Keterangan
+        // Keterangan / Status
         Row(
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
             Text(
-                "KETERANGAN",
+                "STATUS BERKAS",
                 fontSize      = 9.sp,
                 fontWeight    = FontWeight.Bold,
                 color         = TextHint,
                 letterSpacing = 0.7.sp
             )
-            StatusBadge(item.keterangan)
+            StatusBadge(item.status)
         }
     }
 }

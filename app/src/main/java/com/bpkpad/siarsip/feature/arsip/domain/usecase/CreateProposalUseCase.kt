@@ -34,14 +34,13 @@ class CreateProposalUseCase @Inject constructor(
                 createdAt = System.currentTimeMillis()
             )
 
-            // Insert proposal and update archives
-            repository.insertProposal(proposal, archiveIds)
+            val auditLogs = mutableListOf<AuditLog>()
 
             // Log action for proposal creation
-            repository.insertAuditLog(
+            auditLogs.add(
                 AuditLog(
                     id = UUID.randomUUID().toString(),
-                    action = "CREATE_PROPOSAL",
+                    action = "PROPOSAL_CREATED",
                     actorId = actorId,
                     archiveId = null,
                     proposalId = proposalId,
@@ -55,7 +54,7 @@ class CreateProposalUseCase @Inject constructor(
 
             // Log status transitions for each archive
             for (archiveId in archiveIds) {
-                repository.insertAuditLog(
+                auditLogs.add(
                     AuditLog(
                         id = UUID.randomUUID().toString(),
                         action = "ARCHIVE_PROPOSED",
@@ -70,6 +69,9 @@ class CreateProposalUseCase @Inject constructor(
                     )
                 )
             }
+
+            // Insert proposal and update archives with logs in one transaction
+            repository.insertProposal(proposal, archiveIds, auditLogs)
 
             Result.success(Unit)
         } catch (e: Exception) {

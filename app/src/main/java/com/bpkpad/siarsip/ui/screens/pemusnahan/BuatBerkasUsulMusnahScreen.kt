@@ -1,5 +1,6 @@
 package com.bpkpad.siarsip.ui.screens.pemusnahan
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,53 +17,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.core.utils.ResultState
+import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
+import com.bpkpad.siarsip.feature.arsip.presentation.BuatBerkasUsulMusnahViewModel
 import com.bpkpad.siarsip.ui.theme.*
-
-// ─────────────────────────────────────────────────────────────
-//  Data model arsip untuk picker
-// ─────────────────────────────────────────────────────────────
-data class ArsipPickerItem(
-    val id: Int,
-    val kode: String,
-    val deskripsi: String,
-    val tahun: String,
-    val tingkat: String,
-    val volume: String,
-    val keterangan: String // "Musnah" / "Permanen"
-)
-
-val dummyPickerList = listOf(
-    ArsipPickerItem(1, "KN.03.01",
-        "Gaji dan Tunjangan Pegawai Bulan Januari 2016",
-        "2016", "Copy", "1 Berkas", "Musnah"),
-    ArsipPickerItem(2, "KN.03.01",
-        "Pembayaran Gaji Induk Bulan Januari 2016 Pegawai Dinas PPKAD",
-        "2016", "Copy", "1 Berkas", "Musnah"),
-    ArsipPickerItem(3, "KN.03.02",
-        "Pembayaran Kekurangan Gaji Bulan Januari 2016",
-        "2016", "Copy", "1 Berkas", "Musnah"),
-    ArsipPickerItem(4, "KN.03.02",
-        "Pembayaran Kekurangan Gaji Pegawai (Rapel)",
-        "2017", "Copy", "1 Berkas", "Musnah"),
-    ArsipPickerItem(5, "KN.04.01",
-        "Pembayaran Gaji dan Tunjangan PNS Dishubkominfo Kab. Balangan",
-        "2017", "Asli", "2 Berkas", "Permanen"),
-    ArsipPickerItem(6, "NK.02.01",
-        "Peraturan Daerah No. 5 Tahun 2018",
-        "2018", "Asli", "1 Berkas", "Permanen"),
-    ArsipPickerItem(7, "NK.03.05",
-        "SK Pegawai Bidang PPKAD Tahun 2018",
-        "2018", "Copy", "1 Berkas", "Musnah"),
-    ArsipPickerItem(8, "KN.01.02",
-        "Dana Alokasi Umum Tahun 2019",
-        "2019", "Copy", "1 Berkas", "Musnah"),
-)
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
@@ -70,28 +36,51 @@ val dummyPickerList = listOf(
 @Composable
 fun BuatBerkasUsulMusnahScreen(
     onBack: () -> Unit = {},
-    onSimpan: () -> Unit = {}
+    onSimpan: () -> Unit = {},
+    viewModel: BuatBerkasUsulMusnahViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+
+    val availableArchivesState by viewModel.availableArchives.collectAsState()
+    val saveState by viewModel.saveState.collectAsState()
+    val nextNomor by viewModel.nextProposalNumber.collectAsState()
+
+    val availableList = (availableArchivesState as? ResultState.Success)?.data ?: emptyList()
+
     var selectedModul  by remember { mutableStateOf("Keuangan") }
     var perihal        by remember { mutableStateOf("") }
     var pickerSearch   by remember { mutableStateOf("") }
     var pickerFilter   by remember { mutableStateOf("Semua") }
     var pickerYear     by remember { mutableStateOf("Semua") }
-    val selectedIds    = remember { mutableStateListOf<Int>() }
+    val selectedIds    = remember { mutableStateListOf<String>() }
 
     val modulList     = listOf("Keuangan", "Non-Keuangan", "Peminjaman")
     val pickerFilters = listOf("Semua", "Musnah", "Permanen")
-    val pickerYears   = listOf("Semua", "2019", "2018", "2017", "2016")
+    val pickerYears   = listOf("Semua", "2026", "2025", "2019", "2018", "2017", "2016")
 
-    val filteredPicker = dummyPickerList.filter { item ->
+    val filteredPicker = availableList.filter { item ->
+        val matchModul  = item.sumber == selectedModul
         val matchFilter = pickerFilter == "Semua" || item.keterangan == pickerFilter
         val matchYear   = pickerYear == "Semua" || item.tahun == pickerYear
         val matchSearch = pickerSearch.isBlank() ||
                 item.kode.contains(pickerSearch, ignoreCase = true) ||
                 item.deskripsi.contains(pickerSearch, ignoreCase = true)
-        matchFilter && matchYear && matchSearch
+        matchModul && matchFilter && matchYear && matchSearch
     }
-    val selectedItems = dummyPickerList.filter { it.id in selectedIds }
+    val selectedItems = availableList.filter { it.id in selectedIds }
+
+    val todayDate = remember {
+        java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(java.util.Date())
+    }
+
+    val isLoading = saveState is ResultState.Loading
+
+    LaunchedEffect(saveState) {
+        if (saveState is ResultState.Error) {
+            Toast.makeText(context, (saveState as ResultState.Error).exception.message ?: "Gagal menyimpan berkas", Toast.LENGTH_LONG).show()
+            viewModel.resetSaveState()
+        }
+    }
 
     Scaffold(
         containerColor = BgDashboard,
@@ -101,8 +90,24 @@ fun BuatBerkasUsulMusnahScreen(
         bottomBar = {
             BuatBerkasBottomBar(
                 selectedCount = selectedIds.size,
+                isLoading     = isLoading,
                 onBatal       = onBack,
-                onSimpan      = onSimpan
+                onSimpan      = {
+                    if (perihal.isBlank()) {
+                        Toast.makeText(context, "Perihal tidak boleh kosong", Toast.LENGTH_SHORT).show()
+                    } else if (selectedIds.isEmpty()) {
+                        Toast.makeText(context, "Pilih minimal 1 arsip", Toast.LENGTH_SHORT).show()
+                    } else {
+                        viewModel.createProposal(
+                            tanggal = todayDate,
+                            unitPengolah = "BPKPAD Balangan",
+                            sumberModul = selectedModul,
+                            perihal = perihal,
+                            archiveIds = selectedIds,
+                            onSuccess = onSimpan
+                        )
+                    }
+                }
             )
         }
     ) { padding ->
@@ -128,7 +133,7 @@ fun BuatBerkasUsulMusnahScreen(
                 )
                 Spacer(Modifier.height(8.dp))
                 FormCard {
-                    AutoNomorField()
+                    AutoNomorField(nextNomor)
                     Spacer(Modifier.height(12.dp))
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
@@ -136,7 +141,7 @@ fun BuatBerkasUsulMusnahScreen(
                     ) {
                         FormField(
                             label        = "Tanggal",
-                            value        = "20/05/2025",
+                            value        = todayDate,
                             required     = true,
                             trailingIcon = Icons.Filled.CalendarToday,
                             modifier     = Modifier.weight(1f)
@@ -467,6 +472,7 @@ private fun BuatBerkasTopBar(onBack: () -> Unit) {
 @Composable
 private fun BuatBerkasBottomBar(
     selectedCount: Int,
+    isLoading: Boolean,
     onBatal: () -> Unit,
     onSimpan: () -> Unit
 ) {
@@ -484,6 +490,7 @@ private fun BuatBerkasBottomBar(
         ) {
             OutlinedButton(
                 onClick  = onBatal,
+                enabled  = !isLoading,
                 modifier = Modifier
                     .weight(1f)
                     .height(50.dp),
@@ -498,7 +505,7 @@ private fun BuatBerkasBottomBar(
 
             Button(
                 onClick  = onSimpan,
-                enabled  = selectedCount > 0,
+                enabled  = selectedCount > 0 && !isLoading,
                 modifier = Modifier
                     .weight(2f)
                     .height(50.dp),
@@ -510,10 +517,19 @@ private fun BuatBerkasBottomBar(
                     disabledContentColor   = Color.White
                 )
             ) {
-                Icon(Icons.Filled.Save, null, modifier = Modifier.size(16.dp))
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(Icons.Filled.Save, null, modifier = Modifier.size(16.dp))
+                }
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    if (selectedCount > 0) "Simpan Berkas ($selectedCount arsip)"
+                    if (isLoading) "Menyimpan..."
+                    else if (selectedCount > 0) "Simpan Berkas ($selectedCount arsip)"
                     else "Simpan Berkas",
                     fontSize   = 13.sp,
                     fontWeight = FontWeight.Bold
@@ -581,7 +597,7 @@ private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
 //  Auto Nomor Field (read-only)
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun AutoNomorField() {
+private fun AutoNomorField(nomor: String) {
     Row(
         modifier              = Modifier.fillMaxWidth(),
         verticalAlignment     = Alignment.CenterVertically,
@@ -616,7 +632,7 @@ private fun AutoNomorField() {
         Icon(Icons.Filled.Lock, null,
             tint     = GreenPrimary,
             modifier = Modifier.size(16.dp))
-        Text("BUM-2025-004",
+        Text(nomor,
             fontSize   = 14.sp,
             fontWeight = FontWeight.Bold,
             color      = GreenPrimary)
@@ -737,7 +753,7 @@ private fun ModulTabSelector(
 // ─────────────────────────────────────────────────────────────
 @Composable
 private fun PickerRow(
-    item: ArsipPickerItem,
+    item: Arsip,
     isSelected: Boolean,
     isLast: Boolean,
     onClick: () -> Unit
@@ -835,7 +851,7 @@ private fun PickerRow(
 @Composable
 private fun SelectedItemRow(
     number: Int,
-    item: ArsipPickerItem,
+    item: Arsip,
     isLast: Boolean,
     onRemove: () -> Unit
 ) {

@@ -96,7 +96,9 @@ app/
     │   │   ├── repository/ArsipRepository.kt ← Domain repository interface
     │   │   └── usecase/                      ← UseCases: GetAvailable, GetProposals, CreateProposal, UpdateStatus, CreateBA
     │   └── presentation/
-    │       └── DaftarArsipViewModel.kt       ← Exposes uiState: StateFlow<ResultState<List<Arsip>>>
+    │       ├── DaftarArsipViewModel.kt       ← Exposes uiState: StateFlow<ResultState<List<Arsip>>>
+    │       ├── DaftarUsulMusnahViewModel.kt  ← Exposes uiState: StateFlow<ResultState<List<BerkasUsulMusnah>>>
+    │       └── BuatBerkasUsulMusnahViewModel.kt ← Exposes availableArchives, nextProposalNumber, and saveState
     │
     └── ui/
         ├── components/
@@ -315,9 +317,9 @@ data class DisposeArchivePayload(
 | Login Screen | ✅ UI selesai | Terhubung ke LoginViewModel & StateFlow |
 | Dashboard | ✅ UI selesai | Data dummy |
 | DaftarArsip Screen | ✅ UI selesai | Terhubung ke DaftarArsipViewModel & Room DB |
-| DaftarUsulMusnah | ✅ UI selesai | Data dummy |
-| BuatBerkasUsulMusnah | ✅ UI selesai | Form lengkap, belum terhubung DB |
-| DetailBerkasUsulMusnah | ✅ UI selesai | Data dummy |
+| DaftarUsulMusnah | ✅ Selesai | Terhubung ke DaftarUsulMusnahViewModel & Room DB |
+| BuatBerkasUsulMusnah | ✅ Selesai | Terhubung ke BuatBerkasUsulMusnahViewModel, Room DB & transaksi creation proposal |
+| DetailBerkasUsulMusnah | ✅ UI selesai | Menggunakan domain model Arsip (siap dihubungkan) |
 | StatusTracking | ✅ UI selesai | Timeline dummy |
 | BeritaAcara | ✅ UI selesai | Data dummy |
 | DetailBeritaAcara | ✅ UI selesai | Data dummy |
