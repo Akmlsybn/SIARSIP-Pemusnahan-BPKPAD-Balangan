@@ -322,9 +322,9 @@ data class DisposeArchivePayload(
 | BuatBerkasUsulMusnah | ✅ Selesai | Terhubung ke BuatBerkasUsulMusnahViewModel, Room DB & transaksi creation proposal |
 | DetailBerkasUsulMusnah | ✅ UI selesai | Menggunakan domain model Arsip (siap dihubungkan) |
 | StatusTracking | ✅ Selesai | Terhubung ke StatusTrackingViewModel, GetTrackingInfoUseCase & dialog Catat Balasan |
-| BeritaAcara | ✅ UI selesai | Data dummy |
-| DetailBeritaAcara | ✅ UI selesai | Data dummy |
-| LogRiwayat | ✅ UI selesai | Data dummy, immutable |
+| BeritaAcara | ✅ Selesai | Terhubung ke BeritaAcaraViewModel & Room DB |
+| DetailBeritaAcara | ✅ Selesai | Terhubung ke DetailBeritaAcaraViewModel & Room DB |
+| LogRiwayat | ✅ Selesai | Terhubung ke LogRiwayatViewModel & Room DB |
 | Profil | 🔲 Placeholder | Belum ada screen asli |
 | Pengaturan | 🔲 Placeholder | Belum ada screen asli |
 | Auth ViewModel | ✅ Selesai | Mengelola State & terhubung ke UseCase |
@@ -339,7 +339,6 @@ data class DisposeArchivePayload(
 Semua screen pemusnahan menggunakan data dummy (hardcoded lists):
 - `dummyArsipList` → DaftarArsipScreen
 - `dummyBerkasDetail` → DetailBerkasUsulMusnahScreen (referenced di NavGraph)
-- `dummyBeritaAcaraList` → BeritaAcaraScreen (referenced di NavGraph)
 
 Data dummy di-declare di dalam file screen masing-masing.
 

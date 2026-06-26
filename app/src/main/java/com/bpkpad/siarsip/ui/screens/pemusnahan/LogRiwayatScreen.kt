@@ -28,13 +28,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.core.utils.ResultState
+import com.bpkpad.siarsip.feature.arsip.domain.model.LogEntry
+import com.bpkpad.siarsip.feature.arsip.presentation.LogRiwayatViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────
-//  Data Model
+//  Data Model (UI Only Visual Categorization)
 // ─────────────────────────────────────────────────────────────
 enum class LogCategory(
     val label: String,
@@ -52,103 +56,24 @@ enum class LogCategory(
     SISTEM(    "Sistem",    Color(0xFF454D47), Color(0xFFF3F5F3), Icons.Filled.Settings)
 }
 
-data class LogEntry(
-    val id: Int,
-    val time: String,            // "14:30"
-    val dateGroup: String,       // "Hari Ini", "Kemarin", tanggal
-    val sortKey: Int,            // untuk grouping
-    val category: LogCategory,
-    val title: String,
-    val description: String,
-    val relatedBerkas: String?,
-    val person: String,
-    val role: String,
-    val ipAddress: String        // untuk audit
-)
-
-// ─────────────────────────────────────────────────────────────
-//  Dummy Data
-// ─────────────────────────────────────────────────────────────
-val dummyLogList = listOf(
-    LogEntry(1, "14:30", "Hari Ini", 0, LogCategory.BERKAS,
-        "Berkas usul musnah diajukan",
-        "Berkas BUM-2025-003 dikirim ke Tim Penilai untuk dinilai",
-        "BUM-2025-003", "Ahmad Fauzi", "Admin Arsip", "192.168.1.45"),
-    LogEntry(2, "13:15", "Hari Ini", 0, LogCategory.PENILAIAN,
-        "Tim Penilai menyetujui usul",
-        "Tim Penilai menyetujui usul pemusnahan BUM-2025-002",
-        "BUM-2025-002", "Drs. Bambang S.", "Ketua Tim Penilai", "192.168.1.20"),
-    LogEntry(3, "11:00", "Hari Ini", 0, LogCategory.BERITA_ACARA,
-        "Berita Acara dibuat",
-        "BA/PMS/2025/003 berhasil dibuat untuk berkas BUM-2025-001",
-        "BUM-2025-001", "Ahmad Fauzi", "Admin Arsip", "192.168.1.45"),
-    LogEntry(4, "09:15", "Hari Ini", 0, LogCategory.EKSPOR,
-        "PDF diunduh",
-        "Berita Acara BA/PMS/2025/001 diunduh sebagai PDF",
-        "BUM-2024-015", "Hj. Budi R.", "Kabid Aset", "192.168.1.32"),
-    LogEntry(5, "08:30", "Hari Ini", 0, LogCategory.SISTEM,
-        "Login ke sistem",
-        "User berhasil login ke aplikasi SiARSIP",
-        null, "Ahmad Fauzi", "Admin Arsip", "192.168.1.45"),
-
-    LogEntry(6, "16:45", "Kemarin", 1, LogCategory.BERKAS,
-        "Berkas baru dibuat",
-        "Berkas BUM-2025-003 dibuat dengan 6 arsip dari modul Keuangan",
-        "BUM-2025-003", "Ahmad Fauzi", "Admin Arsip", "192.168.1.45"),
-    LogEntry(7, "15:20", "Kemarin", 1, LogCategory.DISETUJUI,
-        "Bupati menyetujui pemusnahan",
-        "Bupati Balangan menyetujui usul pemusnahan BUM-2024-015",
-        "BUM-2024-015", "H. Abdul Hadi", "Bupati Balangan", "10.0.0.5"),
-    LogEntry(8, "10:00", "Kemarin", 1, LogCategory.PEMUSNAHAN,
-        "Pemusnahan arsip dilaksanakan",
-        "Tim Pemusnah melaksanakan pemusnahan 24 arsip dengan metode Pembakaran",
-        "BUM-2024-015", "Dedi Kurniawan", "Tim Pemusnah", "192.168.1.50"),
-
-    LogEntry(9, "14:00", "10 Mei 2025", 2, LogCategory.PENILAIAN,
-        "Tim Penilai meminta revisi",
-        "Berkas BUM-2025-002 dikembalikan ke admin untuk perbaikan deskripsi",
-        "BUM-2025-002", "Drs. Bambang S.", "Ketua Tim Penilai", "192.168.1.20"),
-    LogEntry(10, "11:30", "10 Mei 2025", 2, LogCategory.BERKAS,
-        "Arsip ditambahkan ke berkas",
-        "3 arsip baru ditambahkan ke berkas BUM-2025-002",
-        "BUM-2025-002", "Ahmad Fauzi", "Admin Arsip", "192.168.1.45"),
-
-    LogEntry(11, "09:45", "8 Mei 2025", 3, LogCategory.DITOLAK,
-        "Tim Penilai menolak usul",
-        "Usul pemusnahan BUM-2025-004 ditolak karena retensi belum habis",
-        "BUM-2025-004", "Hj. Budi R.", "Anggota Tim Penilai", "192.168.1.32"),
-)
-
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
 // ─────────────────────────────────────────────────────────────
 @Composable
 fun LogRiwayatScreen(
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    viewModel: LogRiwayatViewModel = hiltViewModel()
 ) {
     var searchQuery   by remember { mutableStateOf("") }
     var activeFilter  by remember { mutableStateOf("Semua") }
-    var expandedId    by remember { mutableStateOf<Int?>(null) }
+    var expandedId    by remember { mutableStateOf<String?>(null) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
 
     val filters = listOf("Semua", "Berkas", "Penilaian", "Pemusnahan", "Berita Acara", "Sistem")
 
-    val filteredList = dummyLogList.filter { log ->
-        val matchFilter = activeFilter == "Semua" || log.category.label == activeFilter
-        val matchSearch = searchQuery.isBlank() ||
-                log.title.contains(searchQuery, ignoreCase = true) ||
-                log.description.contains(searchQuery, ignoreCase = true) ||
-                log.person.contains(searchQuery, ignoreCase = true) ||
-                (log.relatedBerkas?.contains(searchQuery, ignoreCase = true) ?: false)
-        matchFilter && matchSearch
-    }
-
-    // Group by date
-    val grouped = filteredList.groupBy { it.dateGroup }
-        .toList()
-        .sortedBy { it.second.firstOrNull()?.sortKey ?: 99 }
+    val uiState by viewModel.uiState.collectAsState()
 
     // ── Drawer wrapper ────────────────────────────────────────
     ModalNavigationDrawer(
@@ -178,139 +103,179 @@ fun LogRiwayatScreen(
                 )
             }
         ) { padding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(
-                    start  = 16.dp,
-                    end    = 16.dp,
-                    top    = 14.dp,
-                    bottom = 16.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-
-                // ── Stats summary ────────────────────────────
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        LogStatBox(
-                            value    = "${dummyLogList.size}",
-                            label    = "Total Aktivitas",
-                            icon     = Icons.Filled.History,
-                            bgColor  = CardWhite,
-                            color    = TextHead,
-                            modifier = Modifier.weight(1f)
-                        )
-                        LogStatBox(
-                            value    = "${dummyLogList.map { it.person }.distinct().size}",
-                            label    = "Pengguna",
-                            icon     = Icons.Filled.Group,
-                            bgColor  = BlueBg,
-                            color    = BlueText,
-                            modifier = Modifier.weight(1f)
+            when (val state = uiState) {
+                is ResultState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = GreenPrimary)
+                    }
+                }
+                is ResultState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Gagal memuat data: ${state.exception.message}",
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 14.sp
                         )
                     }
                 }
+                is ResultState.Success -> {
+                    val logList = state.data
+                    val filteredList = logList.filter { log ->
+                        val matchFilter = activeFilter == "Semua" || log.categoryName == activeFilter
+                        val matchSearch = searchQuery.isBlank() ||
+                                log.title.contains(searchQuery, ignoreCase = true) ||
+                                log.description.contains(searchQuery, ignoreCase = true) ||
+                                log.person.contains(searchQuery, ignoreCase = true) ||
+                                (log.relatedBerkas?.contains(searchQuery, ignoreCase = true) ?: false)
+                        matchFilter && matchSearch
+                    }
 
-                // ── Search bar ────────────────────────────────
-                item {
-                    OutlinedTextField(
-                        value         = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder   = {
-                            Text("Cari aktivitas, berkas, atau pengguna...",
-                                fontSize = 13.sp, color = TextHint)
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Filled.Search, null,
-                                tint     = TextHint,
-                                modifier = Modifier.size(20.dp))
-                        },
-                        trailingIcon = if (searchQuery.isNotEmpty()) {
-                            {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Filled.Close, null,
-                                        tint = TextHint, modifier = Modifier.size(18.dp))
-                                }
+                    // Group by date, preserving database timestamp DESC sorting
+                    val grouped = filteredList.groupBy { log -> log.dateGroup }
+                        .toList()
+                        .sortedByDescending { it.second.firstOrNull()?.sortKey ?: 0L }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentPadding = PaddingValues(
+                            start  = 16.dp,
+                            end    = 16.dp,
+                            top    = 14.dp,
+                            bottom = 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+
+                        // ── Stats summary ────────────────────────────
+                        item {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                LogStatBox(
+                                    value    = "${logList.size}",
+                                    label    = "Total Aktivitas",
+                                    icon     = Icons.Filled.History,
+                                    bgColor  = CardWhite,
+                                    color    = TextHead,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                LogStatBox(
+                                    value    = "${logList.map { it.person }.distinct().size}",
+                                    label    = "Pengguna",
+                                    icon     = Icons.Filled.Group,
+                                    bgColor  = BlueBg,
+                                    color    = BlueText,
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
-                        } else null,
-                        singleLine = true,
-                        shape      = RoundedCornerShape(12.dp),
-                        colors     = logFieldColors(),
-                        modifier   = Modifier.fillMaxWidth().height(48.dp)
-                    )
-                }
+                        }
 
-                // ── Filter chips ──────────────────────────────
-                item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        items(filters) { filter ->
-                            LogFilterChip(
-                                label    = filter,
-                                isActive = activeFilter == filter,
-                                onClick  = {
-                                    activeFilter = filter
-                                    expandedId   = null
-                                }
+                        // ── Search bar ────────────────────────────────
+                        item {
+                            OutlinedTextField(
+                                value         = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder   = {
+                                    Text("Cari aktivitas, berkas, atau pengguna...",
+                                        fontSize = 13.sp, color = TextHint)
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Search, null,
+                                        tint     = TextHint,
+                                        modifier = Modifier.size(20.dp))
+                                },
+                                trailingIcon = if (searchQuery.isNotEmpty()) {
+                                    {
+                                        IconButton(onClick = { searchQuery = "" }) {
+                                            Icon(Icons.Filled.Close, null,
+                                                tint = TextHint, modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                } else null,
+                                singleLine = true,
+                                shape      = RoundedCornerShape(12.dp),
+                                colors     = logFieldColors(),
+                                modifier   = Modifier.fillMaxWidth().height(48.dp)
                             )
                         }
-                    }
-                }
 
-                // ── Empty state ──────────────────────────────
-                if (grouped.isEmpty()) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape    = RoundedCornerShape(16.dp),
-                            colors   = CardDefaults.cardColors(containerColor = CardWhite),
-                            border   = BorderStroke(1.dp, BorderGray)
-                        ) {
-                            Column(
-                                modifier              = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                horizontalAlignment   = Alignment.CenterHorizontally,
-                                verticalArrangement   = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(Icons.Filled.SearchOff, null,
-                                    tint = TextHint, modifier = Modifier.size(40.dp))
-                                Text("Tidak ada aktivitas ditemukan",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextBody)
-                                Text("Coba ubah kata kunci atau filter",
-                                    fontSize = 11.sp, color = TextHint)
-                            }
-                        }
-                    }
-                }
-
-                // ── Grouped log entries ──────────────────────
-                grouped.forEach { (groupName, entries) ->
-                    item {
-                        DateGroupHeader(label = groupName, count = entries.size)
-                    }
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape    = RoundedCornerShape(16.dp),
-                            colors   = CardDefaults.cardColors(containerColor = CardWhite),
-                            border   = BorderStroke(1.dp, BorderGray)
-                        ) {
-                            Column {
-                                entries.forEachIndexed { index, log ->
-                                    val isExpanded = expandedId == log.id
-                                    val isLast     = index == entries.lastIndex
-                                    LogEntryRow(
-                                        log        = log,
-                                        isExpanded = isExpanded,
-                                        isLast     = isLast,
-                                        onToggle   = {
-                                            expandedId = if (isExpanded) null else log.id
+                        // ── Filter chips ──────────────────────────────
+                        item {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                items(filters) { filter ->
+                                    LogFilterChip(
+                                        label    = filter,
+                                        isActive = activeFilter == filter,
+                                        onClick  = {
+                                            activeFilter = filter
+                                            expandedId   = null
                                         }
                                     )
+                                }
+                            }
+                        }
+
+                        // ── Empty state ──────────────────────────────
+                        if (grouped.isEmpty()) {
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape    = RoundedCornerShape(16.dp),
+                                    colors   = CardDefaults.cardColors(containerColor = CardWhite),
+                                    border   = BorderStroke(1.dp, BorderGray)
+                                ) {
+                                    Column(
+                                        modifier              = Modifier
+                                            .fillMaxWidth()
+                                            .padding(32.dp),
+                                        horizontalAlignment   = Alignment.CenterHorizontally,
+                                        verticalArrangement   = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(Icons.Filled.SearchOff, null,
+                                            tint = TextHint, modifier = Modifier.size(40.dp))
+                                        Text("Tidak ada aktivitas ditemukan",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = TextBody)
+                                        Text("Coba ubah kata kunci atau filter",
+                                            fontSize = 11.sp, color = TextHint)
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Grouped log entries ──────────────────────
+                        grouped.forEach { (groupName, entries) ->
+                            item {
+                                DateGroupHeader(label = groupName, count = entries.size)
+                            }
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape    = RoundedCornerShape(16.dp),
+                                    colors   = CardDefaults.cardColors(containerColor = CardWhite),
+                                    border   = BorderStroke(1.dp, BorderGray)
+                                ) {
+                                    Column {
+                                        entries.forEachIndexed { index, log ->
+                                            val isExpanded = expandedId == log.id
+                                            val isLast     = index == entries.lastIndex
+                                            LogEntryRow(
+                                                log        = log,
+                                                isExpanded = isExpanded,
+                                                isLast     = isLast,
+                                                onToggle   = {
+                                                    expandedId = if (isExpanded) null else log.id
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -463,6 +428,7 @@ private fun LogEntryRow(
     isLast: Boolean,
     onToggle: () -> Unit
 ) {
+    val logCategory = LogCategory.values().firstOrNull { it.label == log.categoryName } ?: LogCategory.SISTEM
     Column {
         Row(
             modifier = Modifier
@@ -490,13 +456,13 @@ private fun LogEntryRow(
                 Box(
                     modifier = Modifier
                         .size(32.dp)
-                        .background(log.category.bgColor, CircleShape)
-                        .border(1.5.dp, log.category.color.copy(alpha = 0.3f), CircleShape),
+                        .background(logCategory.bgColor, CircleShape)
+                        .border(1.5.dp, logCategory.color.copy(alpha = 0.3f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        log.category.icon, null,
-                        tint     = log.category.color,
+                        logCategory.icon, null,
+                        tint     = logCategory.color,
                         modifier = Modifier.size(15.dp)
                     )
                 }
@@ -517,13 +483,13 @@ private fun LogEntryRow(
                         modifier   = Modifier.weight(1f))
                     Box(
                         modifier = Modifier
-                            .background(log.category.bgColor, RoundedCornerShape(9999.dp))
+                            .background(logCategory.bgColor, RoundedCornerShape(9999.dp))
                             .padding(horizontal = 6.dp, vertical = 1.dp)
                     ) {
-                        Text(log.category.label,
+                        Text(logCategory.label,
                             fontSize   = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color      = log.category.color)
+                            color      = logCategory.color)
                     }
                 }
 
@@ -746,5 +712,5 @@ private fun logFieldColors() = OutlinedTextFieldDefaults.colors(
 @Preview(showBackground = true, widthDp = 375, heightDp = 812)
 @Composable
 fun LogRiwayatPreview() {
-    LogRiwayatScreen()
+    // LogRiwayatScreen()
 }
