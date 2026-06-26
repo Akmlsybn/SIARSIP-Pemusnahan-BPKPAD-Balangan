@@ -28,6 +28,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.core.utils.ResultState
+import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
+import com.bpkpad.siarsip.feature.arsip.presentation.DaftarArsipViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.theme.*
@@ -71,8 +75,12 @@ data class FilterCondition(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DaftarArsipScreen(
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    viewModel: DaftarArsipViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val archivesList = (uiState as? ResultState.Success)?.data ?: emptyList()
+
     var searchQuery       by remember { mutableStateOf("") }
     var activeModul       by remember { mutableStateOf("Semua") }
     var activeYear        by remember { mutableStateOf("Semua") }
@@ -91,7 +99,7 @@ fun DaftarArsipScreen(
     val years  = listOf("Semua", "2019", "2018", "2017", "2016")
 
     // Filter logic
-    val filteredList = dummyArsipList.filter { item ->
+    val filteredList = archivesList.filter { item ->
         val matchModul  = activeModul == "Semua" || item.sumber == activeModul
         val matchYear   = activeYear == "Semua" || item.tahun == activeYear
         val matchSearch = searchQuery.isBlank() ||
@@ -231,7 +239,7 @@ fun DaftarArsipScreen(
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
                     Text(
-                        "${filteredList.size} dari ${dummyArsipList.size} arsip",
+                        "${filteredList.size} dari ${archivesList.size} arsip",
                         fontSize   = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color      = TextBody
@@ -250,13 +258,38 @@ fun DaftarArsipScreen(
                     }
                 }
 
-                // ── Excel Table ──────────────────────────────
-                ExcelTable(
-                    columns     = visibleColumns,
-                    data        = filteredList,
-                    totalWidth  = totalWidth,
-                    modifier    = Modifier.weight(1f)
-                )
+                // ── Excel Table / Loading / Error ────────────
+                when (val state = uiState) {
+                    is ResultState.Loading -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = GreenPrimary)
+                        }
+                    }
+                    is ResultState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().weight(1f).padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = state.exception.message ?: "Terjadi kesalahan loading data",
+                                color = DangerText,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    is ResultState.Success -> {
+                        ExcelTable(
+                            columns     = visibleColumns,
+                            data        = filteredList,
+                            totalWidth  = totalWidth,
+                            modifier    = Modifier.weight(1f)
+                        )
+                    }
+                }
 
                 // ── Pagination bar ──────────────────────────
                 Row(
@@ -387,7 +420,7 @@ private fun ArsipTopBar(
 @Composable
 private fun ExcelTable(
     columns: List<TableColumn>,
-    data: List<ArsipItem>,
+    data: List<Arsip>,
     totalWidth: Dp,
     modifier: Modifier = Modifier
 ) {
@@ -480,7 +513,7 @@ private fun ExcelTable(
 @Composable
 private fun ExcelCell(
     column: TableColumn,
-    item: ArsipItem,
+    item: Arsip,
     number: Int
 ) {
     Box(

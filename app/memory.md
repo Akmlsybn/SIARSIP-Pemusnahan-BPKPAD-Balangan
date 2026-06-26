@@ -69,10 +69,12 @@ app/
     │   │   ├── DatabaseModule.kt     ← @Singleton AppDatabase & all DAOs
     │   │   ├── AuthModule.kt         ← @Binds AuthRepository → AuthRepositoryImpl
     │   │   └── ArsipModule.kt        ← @Binds ArsipRepository → ArsipRepositoryImpl
-    │   └── navigation/
-    │       ├── Screen.kt             ← sealed class semua routes
-    │       ├── SiArsipNavGraph.kt    ← NavHost + semua composable route
-    │       └── PlaceholderScreen.kt  ← Sementara: Profil & Pengaturan
+    │   ├── navigation/
+    │   │   ├── Screen.kt             ← sealed class semua routes
+    │   │   ├── SiArsipNavGraph.kt    ← NavHost + semua composable route
+    │   │   └── PlaceholderScreen.kt  ← Sementara: Profil & Pengaturan
+    │   └── utils/
+    │       └── ResultState.kt        ← Generic UI state wrapper (Loading, Success, Error)
     │
     ├── feature/auth/
     │   ├── data/
@@ -89,10 +91,12 @@ app/
     │   ├── data/
     │   │   ├── mapper/ArsipMapper.kt         ← Entity ↔ Domain mapper
     │   │   └── repository/ArsipRepositoryImpl.kt  ← implements ArsipRepository
-    │   └── domain/
-    │       ├── model/                        ← Arsip, BerkasUsulMusnah, BeritaAcara, Penandatangan, AuditLog
-    │       ├── repository/ArsipRepository.kt ← Domain repository interface
-    │       └── usecase/                      ← UseCases: GetAvailable, GetProposals, CreateProposal, UpdateStatus, CreateBA
+    │   ├── domain/
+    │   │   ├── model/                        ← Arsip, BerkasUsulMusnah, BeritaAcara, Penandatangan, AuditLog
+    │   │   ├── repository/ArsipRepository.kt ← Domain repository interface
+    │   │   └── usecase/                      ← UseCases: GetAvailable, GetProposals, CreateProposal, UpdateStatus, CreateBA
+    │   └── presentation/
+    │       └── DaftarArsipViewModel.kt       ← Exposes uiState: StateFlow<ResultState<List<Arsip>>>
     │
     └── ui/
         ├── components/
@@ -310,7 +314,7 @@ data class DisposeArchivePayload(
 |-------|--------|---------|
 | Login Screen | ✅ UI selesai | Terhubung ke LoginViewModel & StateFlow |
 | Dashboard | ✅ UI selesai | Data dummy |
-| DaftarArsip Screen | ✅ UI selesai | Data dummy, tabel Excel + filter + kolom toggle |
+| DaftarArsip Screen | ✅ UI selesai | Terhubung ke DaftarArsipViewModel & Room DB |
 | DaftarUsulMusnah | ✅ UI selesai | Data dummy |
 | BuatBerkasUsulMusnah | ✅ UI selesai | Form lengkap, belum terhubung DB |
 | DetailBerkasUsulMusnah | ✅ UI selesai | Data dummy |
