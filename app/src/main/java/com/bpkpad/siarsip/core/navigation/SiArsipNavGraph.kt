@@ -82,6 +82,7 @@ fun SiArsipNavGraph(
 
         composable(Screen.Dashboard.route) {
             DashboardScreen(
+                onNavigate = { route -> navController.navigateToRoute(route) },
                 onModuleClick = { moduleKey ->
                     when (moduleKey) {
                         "pemusnahan" -> navController.navigate(Screen.DaftarUsulMusnah.route)

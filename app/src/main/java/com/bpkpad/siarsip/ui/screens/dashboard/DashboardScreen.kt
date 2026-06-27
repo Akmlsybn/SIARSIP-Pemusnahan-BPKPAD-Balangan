@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,33 +21,69 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bpkpad.siarsip.ui.theme.*
+import kotlinx.coroutines.launch
+import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
+import com.bpkpad.siarsip.ui.components.DrawerRoutes
 
 // ─────────────────────────────────────────────────────────────
 //  DashboardScreen
 // ─────────────────────────────────────────────────────────────
 @Composable
 fun DashboardScreen(
+    onNavigate: (String) -> Unit = {},
     onModuleClick: (String) -> Unit = {}
 ) {
-    Scaffold(
-        containerColor = BgDashboard,
-        topBar = { DashboardTopBar() },
-        bottomBar = { DashboardBottomBar() }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            GreetingCard()
-            QuickStatsGrid()
-            ModuleSection(onModuleClick)
-            AlertSection()
-            ActivitySection()
-            Spacer(Modifier.height(8.dp))
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.fillMaxWidth(0.86f),
+                drawerContainerColor = CardWhite,
+                drawerShape = RoundedCornerShape(0.dp)
+            ) {
+                PemusnahanDrawerContent(
+                    currentRoute = "dashboard",
+                    onNavigate = { route ->
+                        scope.launch { drawerState.close() }
+                        onNavigate(route)
+                    },
+                    onLogout = {
+                        scope.launch { drawerState.close() }
+                        onNavigate("logout")
+                    }
+                )
+            }
+        }
+    ) {
+        Scaffold(
+            containerColor = BgDashboard,
+            topBar = {
+                DashboardTopBar(
+                    onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    }
+                )
+            },
+            bottomBar = { DashboardBottomBar() }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                GreetingCard()
+                QuickStatsGrid()
+                ModuleSection(onModuleClick)
+                AlertSection()
+                ActivitySection()
+                Spacer(Modifier.height(8.dp))
+            }
         }
     }
 }
@@ -56,7 +93,7 @@ fun DashboardScreen(
 // ─────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DashboardTopBar() {
+private fun DashboardTopBar(onMenuClick: () -> Unit) {
     TopAppBar(
         title = {
             Text(
@@ -67,7 +104,7 @@ private fun DashboardTopBar() {
             )
         },
         navigationIcon = {
-            IconButton(onClick = {}) {
+            IconButton(onClick = onMenuClick) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
             }
         },

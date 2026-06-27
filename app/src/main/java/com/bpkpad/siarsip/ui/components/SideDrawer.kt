@@ -28,7 +28,7 @@ import com.bpkpad.siarsip.ui.theme.*
 object DrawerRoutes {
     const val DAFTAR_ARSIP        = "daftar_arsip"
     const val DAFTAR_USUL_MUSNAH  = "daftar_usul_musnah"
-    const val TRACKING            = "tracking"
+    const val TRACKING            = "status_tracking"
     const val BERITA_ACARA        = "berita_acara"
     const val LOG_RIWAYAT         = "log_riwayat"
     const val PROFIL              = "profil"

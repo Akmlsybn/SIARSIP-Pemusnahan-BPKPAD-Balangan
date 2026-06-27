@@ -4,17 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bpkpad.siarsip.core.utils.ResultState
 import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
-import com.bpkpad.siarsip.feature.arsip.domain.usecase.GetAvailableArchivesUseCase
+import com.bpkpad.siarsip.feature.arsip.domain.usecase.GetAllArchivesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
 @HiltViewModel
 class DaftarArsipViewModel @Inject constructor(
-    private val getAvailableArchivesUseCase: GetAvailableArchivesUseCase
+    private val getAllArchivesUseCase: GetAllArchivesUseCase
 ) : ViewModel() {
 
-    val uiState: StateFlow<ResultState<List<Arsip>>> = getAvailableArchivesUseCase()
+    val uiState: StateFlow<ResultState<List<Arsip>>> = getAllArchivesUseCase()
         .map { archives ->
             ResultState.Success(archives) as ResultState<List<Arsip>>
         }
