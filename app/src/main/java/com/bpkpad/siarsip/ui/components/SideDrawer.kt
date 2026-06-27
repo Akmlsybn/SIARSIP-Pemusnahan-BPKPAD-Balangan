@@ -5,8 +5,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,7 +30,7 @@ import com.bpkpad.siarsip.ui.theme.*
 object DrawerRoutes {
     const val DAFTAR_ARSIP        = "daftar_arsip"
     const val DAFTAR_USUL_MUSNAH  = "daftar_usul_musnah"
-    const val TRACKING            = "status_tracking"
+    const val TRACKING            = "tracking"
     const val BERITA_ACARA        = "berita_acara"
     const val LOG_RIWAYAT         = "log_riwayat"
     const val PROFIL              = "profil"
@@ -120,13 +122,14 @@ fun PemusnahanDrawerContent(
             .background(CardWhite)
     ) {
 
-        // ── Hero Header ──────────────────────────────────────
+        // ── Hero Header (FIXED — tidak ikut scroll) ───────────
         DrawerHeroHeader()
 
-        // ── Menu items ───────────────────────────────────────
+        // ── Menu items (SCROLLABLE) ────────────────────────────
         Column(
             modifier = Modifier
                 .weight(1f)
+                .verticalScroll(rememberScrollState())   // ← FIX: ditambah ini
                 .padding(vertical = 8.dp)
         ) {
             // Section: Modul Pemusnahan
@@ -156,7 +159,7 @@ fun PemusnahanDrawerContent(
             }
         }
 
-        // ── Footer: Keluar ───────────────────────────────────
+        // ── Footer: Keluar (FIXED — tidak ikut scroll) ────────
         HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
         DrawerMenuItem(
             item = DrawerItem(

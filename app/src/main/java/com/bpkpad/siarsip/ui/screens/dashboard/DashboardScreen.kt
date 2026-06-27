@@ -1,5 +1,6 @@
 package com.bpkpad.siarsip.ui.screens.dashboard
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,8 +29,9 @@ import com.bpkpad.siarsip.ui.components.DrawerRoutes
 
 // ─────────────────────────────────────────────────────────────
 //  DashboardScreen
-// ─────────────────────────────────────────────────────────────
+// ──────────────Composable───────────────────────────────────────────────
 @Composable
+
 fun DashboardScreen(
     onNavigate: (String) -> Unit = {},
     onModuleClick: (String) -> Unit = {}
@@ -131,7 +134,7 @@ private fun GreetingCard() {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderGray)
+        border = BorderStroke(1.dp, BorderGray)
     ) {
         Row(
             modifier = Modifier
@@ -567,7 +570,7 @@ private fun ActivityRow(
                     color = TextHead,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(time, fontSize = 10.sp, color = TextHint, modifier = Modifier.padding(top = 1.dp))
             }
@@ -618,26 +621,7 @@ private fun DashboardBottomBar() {
                 unselectedTextColor = TextHint
             )
         )
-        // FAB tengah
-        NavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(GreenPrimary, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = null,
-                        tint = Color.White, modifier = Modifier.size(22.dp))
-                }
-            },
-            label = { Text("") },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = Color.Transparent
-            )
-        )
+
         NavigationBarItem(
             selected = false,
             onClick = {},
