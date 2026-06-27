@@ -20,5 +20,6 @@ data class ArsipEntity(
     val status: String,     // AVAILABLE, PROPOSED, VERIFIED, APPROVED, DISPOSED
     val proposalId: String? = null,
     val beritaAcaraId: String? = null,
-    val disposedAt: String? = null
+    val disposedAt: String? = null,
+    val nasibAkhir: String = "MUSNAH" // JRA Nasib Akhir: "MUSNAH" atau "PERMANEN"
 )

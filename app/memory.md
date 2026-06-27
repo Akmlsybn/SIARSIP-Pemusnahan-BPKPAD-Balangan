@@ -325,8 +325,8 @@ data class DisposeArchivePayload(
 | BeritaAcara | ✅ Selesai | Terhubung ke BeritaAcaraViewModel & Room DB |
 | DetailBeritaAcara | ✅ Selesai | Terhubung ke DetailBeritaAcaraViewModel & Room DB |
 | LogRiwayat | ✅ Selesai | Terhubung ke LogRiwayatViewModel & Room DB |
-| Profil | 🔲 Placeholder | Belum ada screen asli |
-| Pengaturan | 🔲 Placeholder | Belum ada screen asli |
+| Profil | ✅ Selesai | Menggunakan UI asli dari teman & terintegrasi penuh ke NavGraph |
+| Pengaturan | ✅ Selesai | Menggunakan UI premium baru & terintegrasi penuh ke NavGraph |
 | Auth ViewModel | ✅ Selesai | Mengelola State & terhubung ke UseCase |
 | Supabase Integration | 🔲 Belum ada | Dependency belum ditambahkan |
 | State Machine Logic | ✅ Selesai | Validasi state di UseCase (UpdateStatus & CreateBA) |
@@ -379,8 +379,7 @@ Data dummy di-declare di dalam file screen masing-masing.
 
 1. **Tambah dependency Supabase** ke `build.gradle.kts`
 2. **Replace dummy data** dengan Room Flow di setiap screen
-3. **Buat screen Profil** & **Pengaturan** menggantikan PlaceholderScreen
-4. **Tambah strings.xml** untuk terminologi pemerintahan
+3. **Tambah strings.xml** untuk terminologi pemerintahan
 
 ---
 

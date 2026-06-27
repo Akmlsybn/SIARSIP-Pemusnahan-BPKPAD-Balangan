@@ -97,6 +97,7 @@ fun DaftarUsulMusnahScreen(
                     },
                     onLogout = {
                         scope.launch { drawerState.close() }
+                        onNavigate("logout")
                     }
                 )
             }

@@ -18,7 +18,8 @@ fun ArsipEntity.toDomain(): Arsip = Arsip(
     status = status,
     proposalId = proposalId,
     beritaAcaraId = beritaAcaraId,
-    disposedAt = disposedAt
+    disposedAt = disposedAt,
+    nasibAkhir = nasibAkhir
 )
 
 fun Arsip.toEntity(): ArsipEntity = ArsipEntity(
@@ -36,7 +37,8 @@ fun Arsip.toEntity(): ArsipEntity = ArsipEntity(
     status = status,
     proposalId = proposalId,
     beritaAcaraId = beritaAcaraId,
-    disposedAt = disposedAt
+    disposedAt = disposedAt,
+    nasibAkhir = nasibAkhir
 )
 
 fun BerkasUsulMusnahEntity.toDomain(archives: List<Arsip> = emptyList()): BerkasUsulMusnah = BerkasUsulMusnah(

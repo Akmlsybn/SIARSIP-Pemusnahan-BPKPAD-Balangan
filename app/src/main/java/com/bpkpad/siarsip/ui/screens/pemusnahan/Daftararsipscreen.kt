@@ -137,7 +137,10 @@ fun DaftarArsipScreen(
                         scope.launch { drawerState.close() }
                         onNavigate(route)
                     },
-                    onLogout = { scope.launch { drawerState.close() } }
+                    onLogout = {
+                        scope.launch { drawerState.close() }
+                        onNavigate("logout")
+                    }
                 )
             }
         }

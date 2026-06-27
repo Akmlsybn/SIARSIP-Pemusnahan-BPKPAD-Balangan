@@ -53,14 +53,14 @@ val dummyArsipListLocal = listOf(
         deskripsi = "Gaji dan Tunjangan Pegawai Bulan Januari 2016",
         tahun = "2016", tingkat = "Copy", volume = "1 Berkas",
         retensiAktif = "2 Thn", retensiInaktif = "8 Thn", keterangan = "Musnah",
-        sumber = "Keuangan", status = "PROPOSED"
+        sumber = "Keuangan", status = "PROPOSED", nasibAkhir = "MUSNAH"
     ),
     Arsip(
         id = "2", kode = "KN.03.01", fullKode = "00002/SP2D/1.20.05.01/DPPKAD/2016",
         deskripsi = "Pembayaran Gaji Induk Bulan Januari 2016 Pegawai Dinas PPKAD",
         tahun = "2016", tingkat = "Copy", volume = "1 Berkas",
         retensiAktif = "2 Thn", retensiInaktif = "8 Thn", keterangan = "Musnah",
-        sumber = "Keuangan", status = "PROPOSED"
+        sumber = "Keuangan", status = "PROPOSED", nasibAkhir = "MUSNAH"
     )
 )
 

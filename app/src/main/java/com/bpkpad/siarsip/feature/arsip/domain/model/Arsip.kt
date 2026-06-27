@@ -15,5 +15,6 @@ data class Arsip(
     val status: String,
     val proposalId: String? = null,
     val beritaAcaraId: String? = null,
-    val disposedAt: String? = null
+    val disposedAt: String? = null,
+    val nasibAkhir: String
 )

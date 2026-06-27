@@ -24,12 +24,16 @@ import com.bpkpad.siarsip.ui.screens.pemusnahan.DetailBerkasUsulMusnahScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.LogRiwayatScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.StatusTrackingScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.dummyBerkasDetail
+import com.bpkpad.siarsip.ui.screens.profile.ProfileScreen
+import com.bpkpad.siarsip.ui.screens.pengaturan.PengaturanScreen
 
 /**
  * Helper navigasi generik dipakai semua drawer (PemusnahanDrawerContent.onNavigate)
  * supaya satu fungsi bisa nge-handle semua DrawerRoutes string.
  */
 private fun NavHostController.navigateToRoute(route: String) {
+    if (currentDestination?.route == route) return
+
     when (route) {
         "logout" -> {
             navigate(Screen.Login.route) {
@@ -37,7 +41,11 @@ private fun NavHostController.navigateToRoute(route: String) {
             }
         }
         else -> navigate(route) {
+            popUpTo(Screen.Dashboard.route) {
+                saveState = true
+            }
             launchSingleTop = true
+            restoreState = true
         }
     }
 }
@@ -152,12 +160,20 @@ fun SiArsipNavGraph(
             )
         }
 
-        // Profil & Pengaturan — placeholder sementara, sambungkan ke screen asli nanti
+        // Profil & Pengaturan
         composable(Screen.Profil.route) {
-            PlaceholderScreen(title = "Profil Akun", onBack = { navController.popBackStack() })
+            ProfileScreen(
+                onNavigateDashboard = { navController.navigateToRoute(Screen.Dashboard.route) },
+                onNavigateArsip = { navController.navigateToRoute(Screen.DaftarArsip.route) },
+                onNavigateAktivitas = { navController.navigateToRoute(Screen.LogRiwayat.route) },
+                onLogout = { navController.navigateToRoute("logout") },
+                onBack = { navController.popBackStack() }
+            )
         }
         composable(Screen.Pengaturan.route) {
-            PlaceholderScreen(title = "Pengaturan", onBack = { navController.popBackStack() })
+            PengaturanScreen(
+                onNavigate = { route -> navController.navigateToRoute(route) }
+            )
         }
     }
 }

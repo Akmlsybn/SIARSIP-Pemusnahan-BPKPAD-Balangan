@@ -33,6 +33,9 @@ fun LoginScreen(
     var rememberMe by remember { mutableStateOf(false) }
     var pwVisible  by remember { mutableStateOf(false) }
 
+    var usernameError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -87,8 +90,12 @@ fun LoginScreen(
             LoginField(
                 label = "Username",
                 value = username,
-                onValueChange = { username = it },
-                placeholder = "Masukkan username"
+                onValueChange = { 
+                    username = it 
+                    if (it.isNotBlank()) usernameError = null
+                },
+                placeholder = "Masukkan username",
+                errorText = usernameError
             )
 
             Spacer(Modifier.height(14.dp))
@@ -97,11 +104,15 @@ fun LoginScreen(
             LoginField(
                 label = "Password",
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { 
+                    password = it 
+                    if (it.isNotBlank()) passwordError = null
+                },
                 placeholder = "Masukkan password",
                 isPassword = true,
                 passwordVisible = pwVisible,
-                onTogglePassword = { pwVisible = !pwVisible }
+                onTogglePassword = { pwVisible = !pwVisible },
+                errorText = passwordError
             )
 
             Spacer(Modifier.height(12.dp))
@@ -142,7 +153,24 @@ fun LoginScreen(
 
             // Tombol Login
             Button(
-                onClick = { onLoginClick(username, password) },
+                onClick = { 
+                    var hasError = false
+                    if (username.isBlank()) {
+                        usernameError = "Username tidak boleh kosong"
+                        hasError = true
+                    } else {
+                        usernameError = null
+                    }
+                    if (password.isBlank()) {
+                        passwordError = "Password tidak boleh kosong"
+                        hasError = true
+                    } else {
+                        passwordError = null
+                    }
+                    if (!hasError) {
+                        onLoginClick(username, password)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -204,14 +232,15 @@ private fun LoginField(
     placeholder: String = "",
     isPassword: Boolean = false,
     passwordVisible: Boolean = false,
-    onTogglePassword: (() -> Unit)? = null
+    onTogglePassword: (() -> Unit)? = null,
+    errorText: String? = null
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
-            color = TextBody,
+            color = if (errorText != null) MaterialTheme.colorScheme.error else TextBody,
             modifier = Modifier.padding(bottom = 6.dp)
         )
         OutlinedTextField(
@@ -221,6 +250,7 @@ private fun LoginField(
                 Text(placeholder, color = TextHint, fontSize = 14.sp)
             },
             singleLine = true,
+            isError = errorText != null,
             visualTransformation = if (isPassword && !passwordVisible)
                 PasswordVisualTransformation() else VisualTransformation.None,
             trailingIcon = if (isPassword && onTogglePassword != null) {
@@ -232,7 +262,7 @@ private fun LoginField(
                             else
                                 Icons.Filled.VisibilityOff,
                             contentDescription = null,
-                            tint = TextHint
+                            tint = if (errorText != null) MaterialTheme.colorScheme.error else TextHint
                         )
                     }
                 }
@@ -245,12 +275,22 @@ private fun LoginField(
                 unfocusedContainerColor = CardWhite,
                 focusedTextColor        = TextHead,
                 unfocusedTextColor      = TextHead,
-                cursorColor             = GreenPrimary
+                cursorColor             = GreenPrimary,
+                errorBorderColor        = MaterialTheme.colorScheme.error,
+                errorCursorColor        = MaterialTheme.colorScheme.error
             ),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
         )
+        if (errorText != null) {
+            Text(
+                text = errorText,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
+        }
     }
 }
 

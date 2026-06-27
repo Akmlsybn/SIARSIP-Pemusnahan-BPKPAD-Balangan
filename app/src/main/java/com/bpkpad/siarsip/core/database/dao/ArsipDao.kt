@@ -13,7 +13,7 @@ interface ArsipDao {
     @Query("SELECT * FROM archives ORDER BY tahun DESC")
     fun getAllArchives(): Flow<List<ArsipEntity>>
 
-    @Query("SELECT * FROM archives WHERE status = 'AVAILABLE' ORDER BY tahun DESC")
+    @Query("SELECT * FROM archives WHERE status = 'AVAILABLE' AND nasibAkhir = 'MUSNAH' ORDER BY tahun DESC")
     fun getAvailableArchives(): Flow<List<ArsipEntity>>
 
     @Query("SELECT * FROM archives WHERE proposalId = :proposalId ORDER BY tahun DESC")
