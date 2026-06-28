@@ -1,5 +1,6 @@
 package com.bpkpad.siarsip.ui.screens.pemusnahan
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,7 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,11 +30,22 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bpkpad.siarsip.core.utils.ResultState
 import com.bpkpad.siarsip.feature.arsip.domain.model.BeritaAcaraItem
+import com.bpkpad.siarsip.feature.arsip.domain.model.Penandatangan
 import com.bpkpad.siarsip.feature.arsip.presentation.BeritaAcaraViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
+
+// ─────────────────────────────────────────────────────────────
+//  Data Class Input Penandatangan
+// ─────────────────────────────────────────────────────────────
+data class PenandatanganInputState(
+    val id: String = "",
+    val nama: String = "",
+    val jabatan: String = "",
+    val role: String = "SAKSI_LAINNYA"
+)
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
@@ -41,8 +56,20 @@ fun BeritaAcaraScreen(
     onCardClick: (BeritaAcaraItem) -> Unit = {},
     viewModel: BeritaAcaraViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     var searchQuery  by remember { mutableStateOf("") }
     var activeFilter by remember { mutableStateOf("Semua") }
+
+    // Form states
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var nomorBa by remember { mutableStateOf("") }
+    var tanggalEksekusi by remember { mutableStateOf("") }
+    var keterangan by remember { mutableStateOf("") }
+    var selectedProposalId by remember { mutableStateOf("") }
+    val signatoriesList = remember { mutableStateListOf<PenandatanganInputState>() }
+
+    val approvedProposals by viewModel.approvedProposals.collectAsState()
+    val createState by viewModel.createState.collectAsState()
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
@@ -77,6 +104,26 @@ fun BeritaAcaraScreen(
             containerColor = BgDashboard,
             topBar = {
                 BATopBar(onMenuClick = { scope.launch { drawerState.open() } })
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        signatoriesList.clear()
+                        signatoriesList.add(PenandatanganInputState(role = "PENANGGUNG_JAWAB", jabatan = "Penanggung Jawab"))
+                        signatoriesList.add(PenandatanganInputState(role = "SAKSI_1", jabatan = "Saksi 1"))
+                        nomorBa = ""
+                        tanggalEksekusi = ""
+                        keterangan = ""
+                        selectedProposalId = ""
+                        viewModel.resetCreateState()
+                        showCreateDialog = true
+                    },
+                    containerColor = GreenPrimary,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Filled.Add, "Buat Berita Acara")
+                }
             }
         ) { padding ->
             when (val state = uiState) {
@@ -187,7 +234,259 @@ fun BeritaAcaraScreen(
             }
         }
     }
+
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { if (createState !is ResultState.Loading) showCreateDialog = false },
+            title = { Text("Buat Berita Acara Pemusnahan", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            text = {
+                val scrollState = rememberScrollState()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Dropdown untuk berkas usulan APPROVED
+                    Text("Pilih Berkas Usul Musnah:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextHead)
+                    
+                    var proposalDropdownExpanded by remember { mutableStateOf(false) }
+                    val selectedProposal = approvedProposals.find { it.id == selectedProposalId }
+                    Box(modifier = Modifier.fillMaxWidth().clickable { proposalDropdownExpanded = true }) {
+                        OutlinedTextField(
+                            value = selectedProposal?.nomorBerkas ?: "Pilih Berkas Usul Musnah",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Berkas Usulan APPROVED") },
+                            trailingIcon = { Icon(Icons.Filled.ArrowDropDown, null) },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = false,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledBorderColor = BorderGray,
+                                disabledTextColor = if (selectedProposalId.isNotBlank()) TextHead else TextHint,
+                                disabledLabelColor = TextHint
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        DropdownMenu(
+                            expanded = proposalDropdownExpanded,
+                            onDismissRequest = { proposalDropdownExpanded = false }
+                        ) {
+                            approvedProposals.forEach { prop ->
+                                DropdownMenuItem(
+                                    text = { Text("${prop.nomorBerkas} - ${prop.perihal}") },
+                                    onClick = {
+                                        selectedProposalId = prop.id
+                                        proposalDropdownExpanded = false
+                                    }
+                                )
+                            }
+                            if (approvedProposals.isEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text("Tidak ada berkas APPROVED tersedia", color = TextHint) },
+                                    onClick = { proposalDropdownExpanded = false }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+
+                    // Form Berita Acara
+                    Text("Metadata Berita Acara:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextHead)
+                    
+                    OutlinedTextField(
+                        value = nomorBa,
+                        onValueChange = { nomorBa = it },
+                        label = { Text("Nomor Berita Acara") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = tanggalEksekusi,
+                        onValueChange = { tanggalEksekusi = it },
+                        label = { Text("Tanggal Eksekusi") },
+                        placeholder = { Text("Contoh: 28 Juni 2026") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = keterangan,
+                        onValueChange = { keterangan = it },
+                        label = { Text("Keterangan Tambahan") },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    // Dynamic Signatories
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Daftar Penandatangan:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextHead)
+                        TextButton(
+                            onClick = {
+                                signatoriesList.add(
+                                    PenandatanganInputState(
+                                        role = "SAKSI_LAINNYA",
+                                        jabatan = "Saksi Kearsipan"
+                                    )
+                                )
+                            }
+                        ) {
+                            Icon(Icons.Filled.Add, null, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Tambah Row", fontSize = 11.sp)
+                        }
+                    }
+
+                    signatoriesList.forEachIndexed { index, sig ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = BgDashboard),
+                            border = BorderStroke(0.5.dp, BorderGray)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val displayRole = when (sig.role) {
+                                        "PENANGGUNG_JAWAB" -> "Penanggung Jawab"
+                                        "SAKSI_1" -> "Saksi 1"
+                                        "SAKSI_2" -> "Saksi 2"
+                                        else -> "Saksi Lainnya"
+                                    }
+                                    Text("Urutan #${index + 1}: $displayRole", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
+                                    if (sig.role != "PENANGGUNG_JAWAB" && sig.role != "SAKSI_1") {
+                                        IconButton(
+                                            onClick = { signatoriesList.removeAt(index) },
+                                            modifier = Modifier.size(20.dp)
+                                        ) {
+                                            Icon(Icons.Filled.Delete, null, tint = DangerText, modifier = Modifier.size(14.dp))
+                                        }
+                                    }
+                                }
+
+                                OutlinedTextField(
+                                    value = sig.nama,
+                                    onValueChange = { newNama ->
+                                        signatoriesList[index] = sig.copy(nama = newNama)
+                                    },
+                                    label = { Text("Nama Lengkap") },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                OutlinedTextField(
+                                    value = sig.jabatan,
+                                    onValueChange = { newJab ->
+                                        signatoriesList[index] = sig.copy(jabatan = newJab)
+                                    },
+                                    label = { Text("Jabatan") },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                if (sig.role != "PENANGGUNG_JAWAB" && sig.role != "SAKSI_1") {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            RadioButton(
+                                                selected = sig.role == "SAKSI_2",
+                                                onClick = { signatoriesList[index] = sig.copy(role = "SAKSI_2", jabatan = "Saksi 2") }
+                                            )
+                                            Text("Saksi 2", fontSize = 11.sp)
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            RadioButton(
+                                                selected = sig.role == "SAKSI_LAINNYA",
+                                                onClick = { signatoriesList[index] = sig.copy(role = "SAKSI_LAINNYA") }
+                                            )
+                                            Text("Saksi Lainnya", fontSize = 11.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                val isSubmitEnabled = nomorBa.isNotBlank() &&
+                        tanggalEksekusi.isNotBlank() &&
+                        selectedProposalId.isNotBlank() &&
+                        signatoriesList.all { it.nama.isNotBlank() && it.jabatan.isNotBlank() }
+
+                Button(
+                    onClick = {
+                        val mappedSigs = signatoriesList.map {
+                            Penandatangan(
+                                id = "",
+                                beritaAcaraId = "",
+                                nama = it.nama,
+                                jabatan = it.jabatan,
+                                role = it.role,
+                                urutan = 0
+                            )
+                        }
+                        viewModel.createBeritaAcara(
+                            nomorBa = nomorBa,
+                            tanggalEksekusi = tanggalEksekusi,
+                            keterangan = keterangan.takeIf { it.isNotBlank() },
+                            proposalId = selectedProposalId,
+                            signatories = mappedSigs
+                        )
+                    },
+                    enabled = isSubmitEnabled && createState !is ResultState.Loading,
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                ) {
+                    if (createState is ResultState.Loading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Simpan BA")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showCreateDialog = false },
+                    enabled = createState !is ResultState.Loading
+                ) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
+
+    LaunchedEffect(createState) {
+        if (createState is ResultState.Success && showCreateDialog) {
+            showCreateDialog = false
+            Toast.makeText(context, "Berita Acara berhasil dibuat!", Toast.LENGTH_SHORT).show()
+        } else if (createState is ResultState.Error) {
+            Toast.makeText(context, "Gagal: ${(createState as ResultState.Error).exception.message}", Toast.LENGTH_LONG).show()
+            viewModel.resetCreateState()
+        }
+    }
 }
+
 
 // ─────────────────────────────────────────────────────────────
 //  Top Bar

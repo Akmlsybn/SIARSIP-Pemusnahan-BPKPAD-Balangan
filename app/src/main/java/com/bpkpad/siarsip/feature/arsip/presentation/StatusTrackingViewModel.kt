@@ -32,13 +32,26 @@ class StatusTrackingViewModel @Inject constructor(
     private val _updateState = MutableStateFlow<ResultState<Unit>>(ResultState.Success(Unit))
     val updateState: StateFlow<ResultState<Unit>> = _updateState.asStateFlow()
 
-    fun updateProposalStatus(proposalId: String, newStatus: String) {
+    fun updateProposalStatus(
+        proposalId: String,
+        newStatus: String,
+        suratPertimbanganNomor: String? = null,
+        suratPertimbanganPerihal: String? = null,
+        jenisPersetujuanAkhir: String? = null,
+        nomorPersetujuanAkhir: String? = null,
+        perihalPersetujuanAkhir: String? = null
+    ) {
         viewModelScope.launch {
             _updateState.value = ResultState.Loading
             updateProposalStatusUseCase(
                 proposalId = proposalId,
                 newStatus = newStatus,
-                actorId = "admin" // Default actor
+                actorId = "admin", // Default actor
+                suratPertimbanganNomor = suratPertimbanganNomor,
+                suratPertimbanganPerihal = suratPertimbanganPerihal,
+                jenisPersetujuanAkhir = jenisPersetujuanAkhir,
+                nomorPersetujuanAkhir = nomorPersetujuanAkhir,
+                perihalPersetujuanAkhir = perihalPersetujuanAkhir
             ).fold(
                 onSuccess = {
                     _updateState.value = ResultState.Success(Unit)

@@ -49,7 +49,7 @@ app/
     │
     ├── core/
     │   ├── database/
-    │   │   ├── AppDatabase.kt        ← Room DB (v2: User, Arsip, Berkas, BA, Penandatangan, Log)
+    │   │   ├── AppDatabase.kt        ← Room DB (v4: User, Arsip, Berkas, BA, Penandatangan, Log)
     │   │   ├── DatabaseCallback.kt   ← Seeder: admin (SHA-256) & 10 initial archives
     │   │   ├── dao/
     │   │   │   ├── UserDao.kt
@@ -238,6 +238,11 @@ RepositoryImpl
 | `perihal` | String | Uraian perihal berkas |
 | `status` | String | State (PROPOSED, VERIFIED, APPROVED, DISPOSED) |
 | `createdAt` | Long | Unix timestamp pembuatan |
+| `suratPertimbanganNomor` | String? | Nomor surat pertimbangan Tim Penilai |
+| `suratPertimbanganPerihal` | String? | Perihal surat pertimbangan Tim Penilai |
+| `jenisPersetujuanAkhir` | String? | Otoritas persetujuan (BUPATI / ANRI) |
+| `nomorPersetujuanAkhir` | String? | Nomor surat persetujuan akhir |
+| `perihalPersetujuanAkhir` | String? | Perihal surat persetujuan akhir |
 
 ### `berita_acara` table (BeritaAcaraEntity)
 | Kolom | Tipe | Keterangan |
@@ -321,9 +326,9 @@ data class DisposeArchivePayload(
 | DaftarUsulMusnah | ✅ Selesai | Terhubung ke DaftarUsulMusnahViewModel & Room DB |
 | BuatBerkasUsulMusnah | ✅ Selesai | Terhubung ke BuatBerkasUsulMusnahViewModel, Room DB & transaksi creation proposal |
 | DetailBerkasUsulMusnah | ✅ UI selesai | Menggunakan domain model Arsip (siap dihubungkan) |
-| StatusTracking | ✅ Selesai | Terhubung ke StatusTrackingViewModel, GetTrackingInfoUseCase & dialog Catat Balasan |
-| BeritaAcara | ✅ Selesai | Terhubung ke BeritaAcaraViewModel & Room DB |
-| DetailBeritaAcara | ✅ Selesai | Terhubung ke DetailBeritaAcaraViewModel & Room DB |
+| StatusTracking | ✅ Selesai | Terhubung ke StatusTrackingViewModel, GetTrackingInfoUseCase & dialog Catat Balasan (input nomor surat pertimbangan & persetujuan akhir Bupati/ANRI) |
+| BeritaAcara | ✅ Selesai | Terhubung ke BeritaAcaraViewModel & Room DB (FAB dan form pembuatan BA baru dengan list penandatangan dinamis) |
+| DetailBeritaAcara | ✅ Selesai | Terhubung ke DetailBeritaAcaraViewModel & Room DB (ditambahkan Kartu Dasar Hukum Pemusnahan untuk merender nomor surat pertimbangan & persetujuan Bupati/ANRI) |
 | LogRiwayat | ✅ Selesai | Terhubung ke LogRiwayatViewModel & Room DB |
 | Profil | ✅ Selesai | Menggunakan UI asli dari teman & terintegrasi penuh ke NavGraph |
 | Pengaturan | ✅ Selesai | Menggunakan UI premium baru & terintegrasi penuh ke NavGraph |

@@ -21,4 +21,10 @@ interface BerkasUsulMusnahDao {
 
     @Query("UPDATE proposals SET status = :status WHERE id = :id")
     suspend fun updateProposalStatus(id: String, status: String)
+
+    @Query("UPDATE proposals SET suratPertimbanganNomor = :nomor, suratPertimbanganPerihal = :perihal WHERE id = :id")
+    suspend fun updateVerificationMetadata(id: String, nomor: String?, perihal: String?)
+
+    @Query("UPDATE proposals SET jenisPersetujuanAkhir = :jenis, nomorPersetujuanAkhir = :nomor, perihalPersetujuanAkhir = :perihal WHERE id = :id")
+    suspend fun updateApprovalMetadata(id: String, jenis: String?, nomor: String?, perihal: String?)
 }

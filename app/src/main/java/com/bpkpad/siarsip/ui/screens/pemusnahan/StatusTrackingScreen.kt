@@ -210,11 +210,14 @@ fun StatusTrackingScreen(
             }
         }
     }
-
     if (showUpdateDialogFor != null) {
         val berkas = showUpdateDialogFor!!
         val activeStage = berkas.stages.getOrNull(berkas.currentStageIndex)
         val isUpdating = updateState is ResultState.Loading
+
+        var nomorSurat by remember { mutableStateOf("") }
+        var perihalSurat by remember { mutableStateOf("") }
+        var selectedPersetujuan by remember { mutableStateOf("BUPATI") }
 
         AlertDialog(
             onDismissRequest = { if (!isUpdating) showUpdateDialogFor = null },
@@ -228,6 +231,67 @@ fun StatusTrackingScreen(
                         Text("Tahap Aktif saat ini:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
                         Text(activeStage.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextHead)
                         Text(activeStage.description, fontSize = 12.sp, color = TextBody)
+                        
+                        Spacer(Modifier.height(8.dp))
+
+                        if (activeStage.name == "Penilaian Tim") {
+                            Text("Form Surat Pertimbangan (VERIFIED):", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextHead)
+                            OutlinedTextField(
+                                value = nomorSurat,
+                                onValueChange = { nomorSurat = it },
+                                label = { Text("Nomor Surat Pertimbangan") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = perihalSurat,
+                                onValueChange = { perihalSurat = it },
+                                label = { Text("Perihal Surat Pertimbangan") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else if (activeStage.name == "Pengiriman ke Kepala Daerah") {
+                            Text("Pilih Otoritas Persetujuan Akhir:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextHead)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = selectedPersetujuan == "BUPATI",
+                                        onClick = { selectedPersetujuan = "BUPATI" }
+                                    )
+                                    Text("Bupati", fontSize = 13.sp)
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = selectedPersetujuan == "ANRI",
+                                        onClick = { selectedPersetujuan = "ANRI" }
+                                    )
+                                    Text("ANRI", fontSize = 13.sp)
+                                }
+                            }
+                            
+                            OutlinedTextField(
+                                value = nomorSurat,
+                                onValueChange = { nomorSurat = it },
+                                label = { Text("Nomor Surat Persetujuan") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = perihalSurat,
+                                onValueChange = { perihalSurat = it },
+                                label = { Text("Perihal Surat Persetujuan") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     } else {
                         Text("Semua tahapan proses telah selesai.", fontSize = 12.sp, color = TextBody)
                     }
@@ -239,9 +303,14 @@ fun StatusTrackingScreen(
                         "Penilaian Tim" -> {
                             Button(
                                 onClick = {
-                                    viewModel.updateProposalStatus(berkas.proposalId, "VERIFIED")
+                                    viewModel.updateProposalStatus(
+                                        proposalId = berkas.proposalId,
+                                        newStatus = "VERIFIED",
+                                        suratPertimbanganNomor = nomorSurat,
+                                        suratPertimbanganPerihal = perihalSurat
+                                    )
                                 },
-                                enabled = !isUpdating,
+                                enabled = !isUpdating && nomorSurat.isNotBlank() && perihalSurat.isNotBlank(),
                                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
                             ) {
                                 if (isUpdating) {
@@ -254,15 +323,21 @@ fun StatusTrackingScreen(
                         "Pengiriman ke Kepala Daerah" -> {
                             Button(
                                 onClick = {
-                                    viewModel.updateProposalStatus(berkas.proposalId, "APPROVED")
+                                    viewModel.updateProposalStatus(
+                                        proposalId = berkas.proposalId,
+                                        newStatus = "APPROVED",
+                                        jenisPersetujuanAkhir = selectedPersetujuan,
+                                        nomorPersetujuanAkhir = nomorSurat,
+                                        perihalPersetujuanAkhir = perihalSurat
+                                    )
                                 },
-                                enabled = !isUpdating,
+                                enabled = !isUpdating && nomorSurat.isNotBlank() && perihalSurat.isNotBlank(),
                                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
                             ) {
                                 if (isUpdating) {
                                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                 } else {
-                                    Text("Setujui (Tanda Tangan Bupati)")
+                                    Text("Setujui Usulan")
                                 }
                             }
                         }
@@ -270,7 +345,7 @@ fun StatusTrackingScreen(
                             Button(
                                 onClick = {
                                     showUpdateDialogFor = null
-                                    onNavigate("berita_acara") // Navigate to Berita Acara
+                                    onNavigate("berita_acara")
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
                             ) {

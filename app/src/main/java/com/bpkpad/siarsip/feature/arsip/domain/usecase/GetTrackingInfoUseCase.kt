@@ -91,13 +91,20 @@ class GetTrackingInfoUseCase @Inject constructor(
                         date = "—",
                         status = StageStatus.ACTIVE
                     )
-                    "VERIFIED", "APPROVED", "DISPOSED" -> TrackingStage(
-                        name = "Penilaian Tim",
-                        description = "Tim Penilai setuju usul musnah",
-                        person = getActorName(verifiedLog, "Tim Penilai BPKPAD"),
-                        date = verifiedLog?.timestamp?.let { formatTime(it) } ?: "—",
-                        status = StageStatus.DONE
-                    )
+                    "VERIFIED", "APPROVED", "DISPOSED" -> {
+                        val desc = if (proposal.suratPertimbanganNomor != null) {
+                            "Disetujui Tim Penilai (Surat Pertimbangan No: ${proposal.suratPertimbanganNomor})"
+                        } else {
+                            "Tim Penilai setuju usul musnah"
+                        }
+                        TrackingStage(
+                            name = "Penilaian Tim",
+                            description = desc,
+                            person = getActorName(verifiedLog, "Tim Penilai BPKPAD"),
+                            date = verifiedLog?.timestamp?.let { formatTime(it) } ?: "—",
+                            status = StageStatus.DONE
+                        )
+                    }
                     else -> TrackingStage(
                         name = "Penilaian Tim",
                         description = "Sedang dinilai oleh Tim Penilai",
@@ -112,28 +119,36 @@ class GetTrackingInfoUseCase @Inject constructor(
                 val approvedStage = when (proposal.status) {
                     "PROPOSED" -> TrackingStage(
                         name = "Pengiriman ke Kepala Daerah",
-                        description = "Menunggu persetujuan Bupati",
+                        description = "Menunggu persetujuan Bupati/ANRI",
                         person = "—",
                         date = "—",
                         status = StageStatus.PENDING
                     )
                     "VERIFIED" -> TrackingStage(
                         name = "Pengiriman ke Kepala Daerah",
-                        description = "Menunggu persetujuan Bupati",
+                        description = "Menunggu persetujuan Bupati/ANRI",
                         person = "Bupati Balangan",
                         date = "—",
                         status = StageStatus.ACTIVE
                     )
-                    "APPROVED", "DISPOSED" -> TrackingStage(
-                        name = "Pengiriman ke Kepala Daerah",
-                        description = "Disetujui oleh Bupati",
-                        person = getActorName(approvedLog, "Bupati Balangan"),
-                        date = approvedLog?.timestamp?.let { formatTime(it) } ?: "—",
-                        status = StageStatus.DONE
-                    )
+                    "APPROVED", "DISPOSED" -> {
+                        val approver = proposal.jenisPersetujuanAkhir ?: "Bupati"
+                        val desc = if (proposal.nomorPersetujuanAkhir != null) {
+                            "Disetujui oleh $approver (Surat No: ${proposal.nomorPersetujuanAkhir})"
+                        } else {
+                            "Disetujui oleh $approver"
+                        }
+                        TrackingStage(
+                            name = "Pengiriman ke Kepala Daerah",
+                            description = desc,
+                            person = getActorName(approvedLog, approver),
+                            date = approvedLog?.timestamp?.let { formatTime(it) } ?: "—",
+                            status = StageStatus.DONE
+                        )
+                    }
                     else -> TrackingStage(
                         name = "Pengiriman ke Kepala Daerah",
-                        description = "Menunggu persetujuan Bupati",
+                        description = "Menunggu persetujuan Bupati/ANRI",
                         person = "—",
                         date = "—",
                         status = StageStatus.PENDING

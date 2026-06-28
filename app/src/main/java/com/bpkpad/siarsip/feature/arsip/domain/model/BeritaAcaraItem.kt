@@ -12,5 +12,10 @@ data class BeritaAcaraItem(
     val jumlahArsip: Int,
     val sumber: String,
     val tahun: String,
-    val penandatangan: List<Penandatangan>
+    val penandatangan: List<Penandatangan>,
+    val suratPertimbanganNomor: String? = null,
+    val suratPertimbanganPerihal: String? = null,
+    val jenisPersetujuanAkhir: String? = null,
+    val nomorPersetujuanAkhir: String? = null,
+    val perihalPersetujuanAkhir: String? = null
 )

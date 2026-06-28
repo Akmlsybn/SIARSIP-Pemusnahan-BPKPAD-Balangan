@@ -12,7 +12,12 @@ class UpdateProposalStatusUseCase @Inject constructor(
     suspend operator fun invoke(
         proposalId: String,
         newStatus: String,
-        actorId: String
+        actorId: String,
+        suratPertimbanganNomor: String? = null,
+        suratPertimbanganPerihal: String? = null,
+        jenisPersetujuanAkhir: String? = null,
+        nomorPersetujuanAkhir: String? = null,
+        perihalPersetujuanAkhir: String? = null
     ): Result<Unit> {
         return try {
             val proposal = repository.getProposalById(proposalId).first()
@@ -33,6 +38,13 @@ class UpdateProposalStatusUseCase @Inject constructor(
             }
 
             val auditLogs = mutableListOf<AuditLog>()
+            
+            // Build dynamic log notes
+            val customNotes = when (newStatus) {
+                "VERIFIED" -> "Disetujui Tim Penilai berdasarkan Surat Pertimbangan No: $suratPertimbanganNomor ($suratPertimbanganPerihal)"
+                "APPROVED" -> "Disetujui oleh $jenisPersetujuanAkhir berdasarkan Surat No: $nomorPersetujuanAkhir ($perihalPersetujuanAkhir)"
+                else -> "Mengubah status berkas usul musnah ${proposal.nomorBerkas} menjadi $newStatus"
+            }
 
             // Log action for proposal
             auditLogs.add(
@@ -45,7 +57,7 @@ class UpdateProposalStatusUseCase @Inject constructor(
                     beritaAcaraId = null,
                     previousStatus = currentStatus,
                     newStatus = newStatus,
-                    notes = "Mengubah status berkas usul musnah ${proposal.nomorBerkas} menjadi $newStatus",
+                    notes = customNotes,
                     timestamp = System.currentTimeMillis()
                 )
             )
@@ -70,7 +82,16 @@ class UpdateProposalStatusUseCase @Inject constructor(
             }
 
             // Update status and insert logs in repository transaction
-            repository.updateProposalStatus(proposalId, newStatus, auditLogs)
+            repository.updateProposalStatus(
+                proposalId = proposalId,
+                status = newStatus,
+                auditLogs = auditLogs,
+                suratPertimbanganNomor = suratPertimbanganNomor,
+                suratPertimbanganPerihal = suratPertimbanganPerihal,
+                jenisPersetujuanAkhir = jenisPersetujuanAkhir,
+                nomorPersetujuanAkhir = nomorPersetujuanAkhir,
+                perihalPersetujuanAkhir = perihalPersetujuanAkhir
+            )
 
             Result.success(Unit)
         } catch (e: Exception) {

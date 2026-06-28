@@ -15,83 +15,68 @@ class CreateBeritaAcaraUseCase @Inject constructor(
     suspend operator fun invoke(
         nomorBa: String,
         tanggalEksekusi: String,
-        penanggungJawab: String,
-        saksi1: String,
-        saksi2: String?,
         keterangan: String?,
         proposalId: String,
+        signatoriesInput: List<Penandatangan>,
         actorId: String
     ): Result<Unit> {
         return try {
             // Validation
             if (nomorBa.isBlank()) return Result.failure(Exception("Nomor Berita Acara tidak boleh kosong"))
             if (tanggalEksekusi.isBlank()) return Result.failure(Exception("Tanggal eksekusi tidak boleh kosong"))
-            if (penanggungJawab.isBlank()) return Result.failure(Exception("Penanggung jawab tidak boleh kosong"))
-            if (saksi1.isBlank()) return Result.failure(Exception("Saksi 1 tidak boleh kosong"))
-
+            
+            val hasPj = signatoriesInput.any { it.role == "PENANGGUNG_JAWAB" && it.nama.isNotBlank() }
+            val hasSaksi = signatoriesInput.any { it.role.startsWith("SAKSI") && it.nama.isNotBlank() }
+            
+            if (!hasPj) return Result.failure(Exception("Penanggung jawab wajib diisi"))
+            if (!hasSaksi) return Result.failure(Exception("Minimal harus ada satu saksi"))
+ 
             val proposal = repository.getProposalById(proposalId).first()
                 ?: return Result.failure(Exception("Proposal tidak ditemukan"))
-
+ 
             // Rule 5: Enforce State Machine (only APPROVED proposals can be DISPOSED)
             if (proposal.status != "APPROVED") {
                 return Result.failure(Exception("Berkas usul musnah harus berstatus APPROVED sebelum membuat Berita Acara"))
             }
-
+ 
             val beritaAcaraId = UUID.randomUUID().toString()
             
-            // Build signatories
-            val signatories = mutableListOf<Penandatangan>()
-            signatories.add(
-                Penandatangan(
-                    id = UUID.randomUUID().toString(),
+            // Map signatories to have correct beritaAcaraId and urutan
+            val mappedSignatories = signatoriesInput.filter { it.nama.isNotBlank() }.mapIndexed { index, sig ->
+                sig.copy(
+                    id = sig.id.ifBlank { UUID.randomUUID().toString() },
                     beritaAcaraId = beritaAcaraId,
-                    nama = penanggungJawab,
-                    jabatan = "Penanggung Jawab",
-                    role = "PENANGGUNG_JAWAB",
-                    urutan = 1
-                )
-            )
-            signatories.add(
-                Penandatangan(
-                    id = UUID.randomUUID().toString(),
-                    beritaAcaraId = beritaAcaraId,
-                    nama = saksi1,
-                    jabatan = "Saksi 1",
-                    role = "SAKSI_1",
-                    urutan = 2
-                )
-            )
-            if (!saksi2.isNullOrBlank()) {
-                signatories.add(
-                    Penandatangan(
-                        id = UUID.randomUUID().toString(),
-                        beritaAcaraId = beritaAcaraId,
-                        nama = saksi2,
-                        jabatan = "Saksi 2",
-                        role = "SAKSI_2",
-                        urutan = 3
-                    )
+                    urutan = index + 1
                 )
             }
-
+            
+            // Extract top compatibility fields
+            val pjNama = mappedSignatories.find { it.role == "PENANGGUNG_JAWAB" }?.nama ?: ""
+            val saksi1Nama = mappedSignatories.filter { it.role.startsWith("SAKSI") }.getOrNull(0)?.nama ?: ""
+            val saksi2Nama = mappedSignatories.filter { it.role.startsWith("SAKSI") }.getOrNull(1)?.nama
+ 
             // Fetch attached archives
             val archives = repository.getArchivesByProposal(proposalId).first()
             val archiveIds = archives.map { it.id }
-
+ 
             val beritaAcara = BeritaAcara(
                 id = beritaAcaraId,
                 nomorBa = nomorBa,
                 tanggalEksekusi = tanggalEksekusi,
-                penanggungJawab = penanggungJawab,
-                saksi1 = saksi1,
-                saksi2 = saksi2,
+                penanggungJawab = pjNama,
+                saksi1 = saksi1Nama,
+                saksi2 = saksi2Nama,
                 keterangan = keterangan,
                 createdAt = System.currentTimeMillis()
             )
-
+ 
             // Execute in repository
-            repository.insertBeritaAcara(beritaAcara, archiveIds, signatories)
-            repository.updateProposalStatus(proposalId, "DISPOSED", emptyList())
+            repository.insertBeritaAcara(beritaAcara, archiveIds, mappedSignatories)
+            repository.updateProposalStatus(
+                proposalId = proposalId,
+                status = "DISPOSED",
+                auditLogs = emptyList()
+            )
 
             // Log Berita Acara creation
             repository.insertAuditLog(

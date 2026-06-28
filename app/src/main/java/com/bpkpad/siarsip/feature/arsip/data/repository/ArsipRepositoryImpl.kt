@@ -103,10 +103,29 @@ class ArsipRepositoryImpl @Inject constructor(
     override suspend fun updateProposalStatus(
         proposalId: String,
         status: String,
-        auditLogs: List<AuditLog>
+        auditLogs: List<AuditLog>,
+        suratPertimbanganNomor: String?,
+        suratPertimbanganPerihal: String?,
+        jenisPersetujuanAkhir: String?,
+        nomorPersetujuanAkhir: String?,
+        perihalPersetujuanAkhir: String?
     ) = withContext(Dispatchers.IO) {
         appDatabase.withTransaction {
             berkasUsulMusnahDao.updateProposalStatus(proposalId, status)
+            if (status == "VERIFIED") {
+                berkasUsulMusnahDao.updateVerificationMetadata(
+                    proposalId,
+                    suratPertimbanganNomor,
+                    suratPertimbanganPerihal
+                )
+            } else if (status == "APPROVED") {
+                berkasUsulMusnahDao.updateApprovalMetadata(
+                    proposalId,
+                    jenisPersetujuanAkhir,
+                    nomorPersetujuanAkhir,
+                    perihalPersetujuanAkhir
+                )
+            }
             arsipDao.updateArchivesStatusByProposal(proposalId, status)
             for (log in auditLogs) {
                 auditLogDao.insertAuditLog(log.toEntity())

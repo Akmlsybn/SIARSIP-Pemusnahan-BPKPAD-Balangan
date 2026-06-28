@@ -109,6 +109,16 @@ fun DetailBeritaAcaraScreen(
                         DetailPelaksanaanCard(ba)
                     }
 
+                    // ── Section: Dasar Hukum Pemusnahan ──────────────
+                    item {
+                        DetailSectionHeader(
+                            icon  = Icons.Filled.Security,
+                            title = "Dasar Hukum Pemusnahan"
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        DasarHukumCard(ba)
+                    }
+
                     // ── Section: Penandatangan ───────────────────────
                     item {
                         DetailSectionHeader(
@@ -452,6 +462,48 @@ private fun DetailPelaksanaanCard(ba: BeritaAcaraItem) {
                     )
                 }
             }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Dasar Hukum Pemusnahan Card
+// ─────────────────────────────────────────────────────────────
+@Composable
+private fun DasarHukumCard(ba: BeritaAcaraItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(16.dp),
+        colors   = CardDefaults.cardColors(containerColor = CardWhite),
+        border   = BorderStroke(1.dp, BorderGray)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            DetailInfoRow(
+                icon  = Icons.Filled.Info,
+                label = "Surat Pertimbangan Tim Penilai (VERIFIED)",
+                value = if (!ba.suratPertimbanganNomor.isNullOrBlank()) {
+                    "${ba.suratPertimbanganNomor}  •  ${ba.suratPertimbanganPerihal ?: "-"}"
+                } else {
+                    "-"
+                }
+            )
+            DetailDivider()
+
+            val otoritas = when (ba.jenisPersetujuanAkhir?.uppercase()) {
+                "BUPATI" -> "Bupati Balangan"
+                "ANRI" -> "ANRI"
+                else -> "Kepala Daerah / ANRI"
+            }
+
+            DetailInfoRow(
+                icon  = Icons.Filled.Verified,
+                label = "Persetujuan Akhir ($otoritas)",
+                value = if (!ba.nomorPersetujuanAkhir.isNullOrBlank()) {
+                    "${ba.nomorPersetujuanAkhir}  •  ${ba.perihalPersetujuanAkhir ?: "-"}"
+                } else {
+                    "-"
+                }
+            )
         }
     }
 }

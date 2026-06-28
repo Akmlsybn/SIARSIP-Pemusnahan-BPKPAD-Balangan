@@ -13,5 +13,10 @@ data class BerkasUsulMusnahEntity(
     val sumberModul: String,
     val perihal: String,
     val status: String, // PROPOSED, VERIFIED, APPROVED, DISPOSED
-    val createdAt: Long
+    val createdAt: Long,
+    val suratPertimbanganNomor: String? = null,
+    val suratPertimbanganPerihal: String? = null,
+    val jenisPersetujuanAkhir: String? = null,
+    val nomorPersetujuanAkhir: String? = null,
+    val perihalPersetujuanAkhir: String? = null
 )

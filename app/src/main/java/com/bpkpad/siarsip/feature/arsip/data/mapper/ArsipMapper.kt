@@ -50,7 +50,12 @@ fun BerkasUsulMusnahEntity.toDomain(archives: List<Arsip> = emptyList()): Berkas
     perihal = perihal,
     status = status,
     createdAt = createdAt,
-    archives = archives
+    archives = archives,
+    suratPertimbanganNomor = suratPertimbanganNomor,
+    suratPertimbanganPerihal = suratPertimbanganPerihal,
+    jenisPersetujuanAkhir = jenisPersetujuanAkhir,
+    nomorPersetujuanAkhir = nomorPersetujuanAkhir,
+    perihalPersetujuanAkhir = perihalPersetujuanAkhir
 )
 
 fun BerkasUsulMusnah.toEntity(): BerkasUsulMusnahEntity = BerkasUsulMusnahEntity(
@@ -61,7 +66,12 @@ fun BerkasUsulMusnah.toEntity(): BerkasUsulMusnahEntity = BerkasUsulMusnahEntity
     sumberModul = sumberModul,
     perihal = perihal,
     status = status,
-    createdAt = createdAt
+    createdAt = createdAt,
+    suratPertimbanganNomor = suratPertimbanganNomor,
+    suratPertimbanganPerihal = suratPertimbanganPerihal,
+    jenisPersetujuanAkhir = jenisPersetujuanAkhir,
+    nomorPersetujuanAkhir = nomorPersetujuanAkhir,
+    perihalPersetujuanAkhir = perihalPersetujuanAkhir
 )
 
 fun BeritaAcaraEntity.toDomain(signatories: List<Penandatangan> = emptyList(), archives: List<Arsip> = emptyList()): BeritaAcara = BeritaAcara(

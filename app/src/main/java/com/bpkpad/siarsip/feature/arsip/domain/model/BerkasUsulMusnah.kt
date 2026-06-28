@@ -9,5 +9,10 @@ data class BerkasUsulMusnah(
     val perihal: String,
     val status: String,
     val createdAt: Long,
-    val archives: List<Arsip> = emptyList()
+    val archives: List<Arsip> = emptyList(),
+    val suratPertimbanganNomor: String? = null,
+    val suratPertimbanganPerihal: String? = null,
+    val jenisPersetujuanAkhir: String? = null,
+    val nomorPersetujuanAkhir: String? = null,
+    val perihalPersetujuanAkhir: String? = null
 )
