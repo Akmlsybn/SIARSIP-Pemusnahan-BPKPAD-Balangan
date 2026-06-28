@@ -39,6 +39,12 @@ import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import com.bpkpad.siarsip.core.utils.ExcelExportManager
+import kotlinx.coroutines.Dispatchers
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
@@ -59,6 +65,33 @@ fun DaftarUsulMusnahScreen(
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
+    val context     = LocalContext.current
+    var proposalToExport by remember { mutableStateOf<BerkasUsulMusnah?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        onResult = { uri ->
+            uri?.let {
+                proposalToExport?.let { berkas ->
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            context.contentResolver.openOutputStream(uri)?.use { out ->
+                                ExcelExportManager.exportToExcel(berkas, out)
+                            }
+                            scope.launch(Dispatchers.Main) {
+                                Toast.makeText(context, "Daftar Arsip berhasil diekspor ke Excel!", Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: Exception) {
+                            scope.launch(Dispatchers.Main) {
+                                Toast.makeText(context, "Gagal ekspor: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
+
     val filters = listOf("Semua", "Keuangan", "Non-Keuangan", "Peminjaman")
     val years   = listOf("Semua", "2026", "2025", "2019", "2018", "2017", "2016")
 
@@ -313,6 +346,10 @@ fun DaftarUsulMusnahScreen(
                                     isLast     = isLast,
                                     onEyeClick = {
                                         expandedItemId = if (isExpanded) null else item.id
+                                    },
+                                    onExportExcel = { berkas ->
+                                        proposalToExport = berkas
+                                        exportLauncher.launch("Daftar_Arsip_Usul_Musnah_${berkas.nomorBerkas.replace("/", "_")}.xlsx")
                                     }
                                 )
                             }
@@ -531,7 +568,8 @@ private fun ArchiveRowCard(
     item: BerkasUsulMusnah,
     isExpanded: Boolean,
     isLast: Boolean,
-    onEyeClick: () -> Unit
+    onEyeClick: () -> Unit,
+    onExportExcel: (BerkasUsulMusnah) -> Unit
 ) {
     val bottomShape = if (isLast && !isExpanded)
         RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
@@ -631,7 +669,7 @@ private fun ArchiveRowCard(
             enter   = expandVertically() + fadeIn(),
             exit    = shrinkVertically() + fadeOut()
         ) {
-            DetailPanel(item = item, onClose = onEyeClick)
+            DetailPanel(item = item, onExportExcel = onExportExcel, onClose = onEyeClick)
         }
     }
 }
@@ -640,7 +678,11 @@ private fun ArchiveRowCard(
 //  Detail Panel (accordion content)
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun DetailPanel(item: BerkasUsulMusnah, onClose: () -> Unit) {
+private fun DetailPanel(
+    item: BerkasUsulMusnah,
+    onExportExcel: (BerkasUsulMusnah) -> Unit,
+    onClose: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -779,6 +821,25 @@ private fun DetailPanel(item: BerkasUsulMusnah, onClose: () -> Unit) {
                 letterSpacing = 0.7.sp
             )
             StatusBadge(item.status)
+        }
+
+        if (item.status == "APPROVED" || item.status == "DISPOSED") {
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = { onExportExcel(item) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = GreenPrimary,
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(Icons.Filled.FileDownload, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Export Excel (.xlsx)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

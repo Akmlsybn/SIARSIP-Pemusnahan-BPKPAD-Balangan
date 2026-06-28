@@ -42,7 +42,7 @@ class GetBeritaAcaraByIdUseCase @Inject constructor(
                 tanggal = tanggal,
                 tanggalShort = tanggalShort,
                 lokasi = ba.keterangan?.takeIf { it.isNotBlank() } ?: "Kantor BPKPAD Balangan",
-                metode = "Pencacahan (Shredding)",
+                metode = ba.metode,
                 jumlahArsip = ba.archives.size,
                 sumber = proposal?.sumberModul ?: "-",
                 tahun = year,

@@ -36,6 +36,16 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources {
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/LICENSE*"
+            excludes += "META-INF/NOTICE*"
+            excludes += "META-INF/notice*"
+            excludes += "META-INF/license*"
+            excludes += "META-INF/ASL2.0"
+        }
+    }
 }
 
 kotlin {
@@ -43,6 +53,7 @@ kotlin {
 }
 
 dependencies {
+    implementation("org.apache.poi:poi-ooxml:5.2.3")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

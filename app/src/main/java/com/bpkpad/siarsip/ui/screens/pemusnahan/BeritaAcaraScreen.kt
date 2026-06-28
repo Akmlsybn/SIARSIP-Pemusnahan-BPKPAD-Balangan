@@ -66,6 +66,7 @@ fun BeritaAcaraScreen(
     var nomorBa by remember { mutableStateOf("") }
     var tanggalEksekusi by remember { mutableStateOf("") }
     var keterangan by remember { mutableStateOf("") }
+    var metode by remember { mutableStateOf("Pencacahan") }
     var selectedProposalId by remember { mutableStateOf("") }
     val signatoriesList = remember { mutableStateListOf<PenandatanganInputState>() }
 
@@ -121,6 +122,7 @@ fun BeritaAcaraScreen(
                         nomorBa = ""
                         tanggalEksekusi = ""
                         keterangan = ""
+                        metode = "Pencacahan"
                         selectedProposalId = ""
                         viewModel.resetCreateState()
                         showCreateDialog = true
@@ -349,6 +351,44 @@ fun BeritaAcaraScreen(
 
                     Spacer(Modifier.height(4.dp))
 
+                    Text("Metode Pemusnahan:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextHead)
+                    var metodeDropdownExpanded by remember { mutableStateOf(false) }
+                    Box(modifier = Modifier.fillMaxWidth().clickable { metodeDropdownExpanded = true }) {
+                        OutlinedTextField(
+                            value = metode,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Metode Pemusnahan") },
+                            trailingIcon = { Icon(Icons.Filled.ArrowDropDown, null) },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = false,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledBorderColor = BorderGray,
+                                disabledTextColor = TextHead,
+                                disabledLabelColor = TextHint
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        DropdownMenu(
+                            expanded = metodeDropdownExpanded,
+                            onDismissRequest = { metodeDropdownExpanded = false },
+                            modifier = Modifier.background(CardWhite)
+                        ) {
+                            val metodeOptions = listOf("Pencacahan", "Pembakaran", "Peleburan", "Pemusnahan Kimiawi")
+                            metodeOptions.forEach { opt ->
+                                DropdownMenuItem(
+                                    text = { Text(opt, color = TextHead) },
+                                    onClick = {
+                                        metode = opt
+                                        metodeDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+
                     // Dynamic Signatories
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -479,6 +519,7 @@ fun BeritaAcaraScreen(
                             nomorBa = nomorBa,
                             tanggalEksekusi = tanggalEksekusi,
                             keterangan = keterangan.takeIf { it.isNotBlank() },
+                            metode = metode,
                             proposalId = selectedProposalId,
                             signatories = mappedSigs
                         )

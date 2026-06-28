@@ -54,6 +54,7 @@ class BeritaAcaraViewModel @Inject constructor(
         nomorBa: String,
         tanggalEksekusi: String,
         keterangan: String?,
+        metode: String,
         proposalId: String,
         signatories: List<Penandatangan>
     ) {
@@ -63,6 +64,7 @@ class BeritaAcaraViewModel @Inject constructor(
                 nomorBa = nomorBa,
                 tanggalEksekusi = tanggalEksekusi,
                 keterangan = keterangan,
+                metode = metode,
                 proposalId = proposalId,
                 signatoriesInput = signatories,
                 actorId = "admin"

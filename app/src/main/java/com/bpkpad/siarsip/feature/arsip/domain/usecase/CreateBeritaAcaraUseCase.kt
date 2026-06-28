@@ -16,6 +16,7 @@ class CreateBeritaAcaraUseCase @Inject constructor(
         nomorBa: String,
         tanggalEksekusi: String,
         keterangan: String?,
+        metode: String,
         proposalId: String,
         signatoriesInput: List<Penandatangan>,
         actorId: String
@@ -67,6 +68,7 @@ class CreateBeritaAcaraUseCase @Inject constructor(
                 saksi1 = saksi1Nama,
                 saksi2 = saksi2Nama,
                 keterangan = keterangan,
+                metode = metode,
                 createdAt = System.currentTimeMillis()
             )
  

@@ -82,6 +82,7 @@ fun BeritaAcaraEntity.toDomain(signatories: List<Penandatangan> = emptyList(), a
     saksi1 = saksi1,
     saksi2 = saksi2,
     keterangan = keterangan,
+    metode = metode,
     createdAt = createdAt,
     signatories = signatories,
     archives = archives
@@ -101,6 +102,7 @@ fun BeritaAcara.toEntity(): BeritaAcaraEntity = BeritaAcaraEntity(
     saksi1 = saksi1,
     saksi2 = saksi2,
     keterangan = keterangan,
+    metode = metode,
     createdAt = createdAt
 )
 

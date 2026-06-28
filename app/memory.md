@@ -323,12 +323,12 @@ data class DisposeArchivePayload(
 | Login Screen | ✅ Selesai | Terhubung ke LoginViewModel & StateFlow (ditambahkan fungsionalitas 'Remember Me' auto-login dengan persistensi SharedPreferences) |
 | Dashboard | ✅ UI selesai | Data dummy |
 | DaftarArsip Screen | ✅ UI selesai | Terhubung ke DaftarArsipViewModel & Room DB |
-| DaftarUsulMusnah | ✅ Selesai | Terhubung ke DaftarUsulMusnahViewModel & Room DB |
+| DaftarUsulMusnah | ✅ Selesai | Terhubung ke DaftarUsulMusnahViewModel & Room DB (ditambahkan fitur Export Excel .xlsx via SAF untuk berkas APPROVED & DISPOSED) |
 | BuatBerkasUsulMusnah | ✅ Selesai | Terhubung ke BuatBerkasUsulMusnahViewModel, Room DB & transaksi creation proposal |
 | DetailBerkasUsulMusnah | ✅ UI selesai | Menggunakan domain model Arsip (siap dihubungkan) |
 | StatusTracking | ✅ Selesai | Terhubung ke StatusTrackingViewModel & Room DB (dialog diperbarui dengan warna latar belakang putih bersih & teks kontras tinggi) |
 | BeritaAcara | ✅ Selesai | Terhubung ke BeritaAcaraViewModel & Room DB (dialog pembuatan BA baru diperbarui dengan warna latar belakang putih & teks kontras tinggi) |
-| DetailBeritaAcara | ✅ Selesai | Terhubung ke DetailBeritaAcaraViewModel & Room DB (ditambahkan Kartu Dasar Hukum Pemusnahan untuk merender nomor surat pertimbangan & persetujuan Bupati/ANRI) |
+| DetailBeritaAcara | ✅ Selesai | Terhubung ke DetailBeritaAcaraViewModel & Room DB (ditambahkan Kartu Dasar Hukum Pemusnahan & fitur Ekspor PDF resmi 2 halaman via SAF) |
 | LogRiwayat | ✅ Selesai | Terhubung ke LogRiwayatViewModel & Room DB |
 | Profil | ✅ Selesai | Menggunakan UI asli dari teman & terintegrasi penuh ke NavGraph (ditambahkan konfirmasi keluar) |
 | Auth ViewModel | ✅ Selesai | Mengelola State & terhubung ke UseCase |

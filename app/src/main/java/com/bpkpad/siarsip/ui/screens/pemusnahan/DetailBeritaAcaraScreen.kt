@@ -31,6 +31,16 @@ import com.bpkpad.siarsip.feature.arsip.domain.model.BeritaAcaraItem
 import com.bpkpad.siarsip.feature.arsip.domain.model.Penandatangan
 import com.bpkpad.siarsip.feature.arsip.presentation.DetailBeritaAcaraViewModel
 import com.bpkpad.siarsip.ui.theme.*
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.bpkpad.siarsip.core.utils.PdfExportManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
@@ -44,19 +54,58 @@ fun DetailBeritaAcaraScreen(
     viewModel: DetailBeritaAcaraViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var baToExport by remember { mutableStateOf<BeritaAcaraItem?>(null) }
+
+    val exportPdfLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/pdf"),
+        onResult = { uri ->
+            uri?.let {
+                baToExport?.let { ba ->
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            context.contentResolver.openOutputStream(uri)?.use { out ->
+                                PdfExportManager.exportToPdf(context, ba, out)
+                            }
+                            scope.launch(Dispatchers.Main) {
+                                Toast.makeText(context, "Berita Acara berhasil diekspor ke PDF!", Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: Exception) {
+                            scope.launch(Dispatchers.Main) {
+                                Toast.makeText(context, "Gagal ekspor PDF: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+    val baItem = (uiState as? ResultState.Success)?.data
 
     Scaffold(
         containerColor = BgDashboard,
         topBar = {
             DetailBATopBar(
                 onBack       = onBack,
-                onUnduhPdf   = onUnduhPdf
+                onUnduhPdf   = {
+                    baItem?.let { ba ->
+                        baToExport = ba
+                        exportPdfLauncher.launch("Berita_Acara_Pemusnahan_${ba.nomor.replace("/", "_")}.pdf")
+                    }
+                }
             )
         },
         bottomBar = {
             DetailBABottomBar(
                 onLihatArsip = onLihatArsip,
-                onCetak      = onCetak
+                onCetak      = {
+                    baItem?.let { ba ->
+                        baToExport = ba
+                        exportPdfLauncher.launch("Berita_Acara_Pemusnahan_${ba.nomor.replace("/", "_")}.pdf")
+                    }
+                }
             )
         }
     ) { padding ->
