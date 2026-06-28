@@ -13,6 +13,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +59,46 @@ fun ProfileScreen(
     onNavigateArsip: () -> Unit = {},
     onNavigateAktivitas: () -> Unit = {}
 ) {
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = "Konfirmasi Keluar",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = TextHead
+                )
+            },
+            text = {
+                Text(
+                    text = "Apakah Anda yakin ingin keluar dari aplikasi?",
+                    fontSize = 14.sp,
+                    color = TextBody
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    }
+                ) {
+                    Text(text = "Keluar", color = DangerText, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(text = "Batal", color = TextHint)
+                }
+            },
+            containerColor = CardWhite,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
     Scaffold(
         containerColor = BgDashboard,
         topBar = { ProfileTopBar() },
@@ -221,7 +264,7 @@ fun ProfileScreen(
                 title      = "Logout",
                 subtitle   = "Keluar dari akun",
                 titleColor = DangerText,
-                onClick    = onLogout
+                onClick    = { showLogoutDialog = true }
             )
 
             Spacer(Modifier.height(20.dp))

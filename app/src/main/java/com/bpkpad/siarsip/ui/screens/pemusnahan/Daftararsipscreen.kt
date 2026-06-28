@@ -34,6 +34,7 @@ import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
 import com.bpkpad.siarsip.feature.arsip.presentation.DaftarArsipViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
+import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -147,6 +148,12 @@ fun DaftarArsipScreen(
     ) {
         Scaffold(
             containerColor = BgDashboard,
+            bottomBar = {
+                PemusnahanBottomBar(
+                    currentRoute = DrawerRoutes.DAFTAR_ARSIP,
+                    onNavigate   = onNavigate
+                )
+            },
             topBar = {
                 ArsipTopBar(
                     onMenuClick      = { scope.launch { drawerState.open() } },

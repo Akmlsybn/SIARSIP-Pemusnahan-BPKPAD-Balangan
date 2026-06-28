@@ -25,7 +25,6 @@ import com.bpkpad.siarsip.ui.screens.pemusnahan.LogRiwayatScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.StatusTrackingScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.dummyBerkasDetail
 import com.bpkpad.siarsip.ui.screens.profile.ProfileScreen
-import com.bpkpad.siarsip.ui.screens.pengaturan.PengaturanScreen
 
 /**
  * Helper navigasi generik dipakai semua drawer (PemusnahanDrawerContent.onNavigate)
@@ -161,7 +160,7 @@ fun SiArsipNavGraph(
             )
         }
 
-        // Profil & Pengaturan
+        // Profil
         composable(Screen.Profil.route) {
             ProfileScreen(
                 onNavigateDashboard = { navController.navigateToRoute(Screen.Dashboard.route, onLogout) },
@@ -169,11 +168,6 @@ fun SiArsipNavGraph(
                 onNavigateAktivitas = { navController.navigateToRoute(Screen.LogRiwayat.route, onLogout) },
                 onLogout = { navController.navigateToRoute("logout", onLogout) },
                 onBack = { navController.popBackStack() }
-            )
-        }
-        composable(Screen.Pengaturan.route) {
-            PengaturanScreen(
-                onNavigate = { route -> navController.navigateToRoute(route, onLogout) }
             )
         }
     }

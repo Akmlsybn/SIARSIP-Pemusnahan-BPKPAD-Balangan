@@ -48,7 +48,7 @@ fun DashboardScreen(
                 drawerShape = RoundedCornerShape(0.dp)
             ) {
                 PemusnahanDrawerContent(
-                    currentRoute = "dashboard",
+                    currentRoute = DrawerRoutes.DASHBOARD,
                     onNavigate = { route ->
                         scope.launch { drawerState.close() }
                         onNavigate(route)

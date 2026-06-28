@@ -20,5 +20,4 @@ sealed class Screen(val route: String) {
 
     object LogRiwayat : Screen("log_riwayat")
     object Profil : Screen("profil")
-    object Pengaturan : Screen("pengaturan")
 }

@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,13 +30,13 @@ import com.bpkpad.siarsip.ui.theme.*
 //  Route constants — pakai di semua layar
 // ─────────────────────────────────────────────────────────────
 object DrawerRoutes {
+    const val DASHBOARD           = "dashboard"
     const val DAFTAR_ARSIP        = "daftar_arsip"
     const val DAFTAR_USUL_MUSNAH  = "daftar_usul_musnah"
     const val TRACKING            = "status_tracking"
     const val BERITA_ACARA        = "berita_acara"
     const val LOG_RIWAYAT         = "log_riwayat"
     const val PROFIL              = "profil"
-    const val PENGATURAN          = "pengaturan"
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -55,65 +57,63 @@ private data class DrawerItem(
 // ─────────────────────────────────────────────────────────────
 @Composable
 fun PemusnahanDrawerContent(
-    currentRoute: String    = DrawerRoutes.DAFTAR_USUL_MUSNAH,
+    currentRoute: String    = DrawerRoutes.DASHBOARD,
     onNavigate: (String) -> Unit = {},
     onLogout: () -> Unit    = {}
 ) {
-    val modulItems = listOf(
-        DrawerItem(
-            route       = DrawerRoutes.DAFTAR_ARSIP,
-            name        = "Daftar Arsip",
-            description = "Sumber data dari 3 modul",
-            icon        = Icons.Filled.Folder,
-            badge       = "12.540",
-            badgeBg     = GreenLight,
-            badgeTextColor = GreenPrimary
-        ),
-        DrawerItem(
-            route       = DrawerRoutes.DAFTAR_USUL_MUSNAH,
-            name        = "Daftar Usul Musnah",
-            description = "Berdasarkan JRA",
-            icon        = Icons.Filled.PlaylistAddCheck,
-            badge       = "238",
-            badgeBg     = DangerBg,
-            badgeTextColor = DangerText
-        ),
-        DrawerItem(
-            route       = DrawerRoutes.TRACKING,
-            name        = "Tracking",
-            description = "Status berkas & balasan",
-            icon        = Icons.Filled.Timeline,
-            badge       = "5",
-            badgeBg     = AmberBg,
-            badgeTextColor = AmberText
-        ),
-        DrawerItem(
-            route       = DrawerRoutes.BERITA_ACARA,
-            name        = "Berita Acara",
-            description = "Pencatatan setelah musnah",
-            icon        = Icons.Filled.AssignmentTurnedIn,
-        ),
-        DrawerItem(
-            route       = DrawerRoutes.LOG_RIWAYAT,
-            name        = "Log Riwayat",
-            description = "Dokumentasi seluruh tahapan",
-            icon        = Icons.Filled.History,
-        ),
-    )
+    var showLogoutDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
 
-    val akunItems = listOf(
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = "Konfirmasi Keluar",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = TextHead
+                )
+            },
+            text = {
+                Text(
+                    text = "Apakah Anda yakin ingin keluar dari aplikasi?",
+                    fontSize = 14.sp,
+                    color = TextBody
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    }
+                ) {
+                    Text(text = "Keluar", color = DangerText, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(text = "Batal", color = TextHint)
+                }
+            },
+            containerColor = CardWhite,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    val menuItems = listOf(
+        DrawerItem(
+            route       = DrawerRoutes.DASHBOARD,
+            name        = "Beranda",
+            description = "Halaman utama dashboard",
+            icon        = Icons.Filled.Home
+        ),
         DrawerItem(
             route       = DrawerRoutes.PROFIL,
             name        = "Profil Akun",
-            description = "",
-            icon        = Icons.Filled.AccountCircle,
-        ),
-        DrawerItem(
-            route       = DrawerRoutes.PENGATURAN,
-            name        = "Pengaturan",
-            description = "",
-            icon        = Icons.Filled.Settings,
-        ),
+            description = "Detail profil pengguna",
+            icon        = Icons.Filled.AccountCircle
+        )
     )
 
     Column(
@@ -129,32 +129,15 @@ fun PemusnahanDrawerContent(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .verticalScroll(rememberScrollState())   // ← FIX: ditambah ini
+                .verticalScroll(rememberScrollState())
                 .padding(vertical = 8.dp)
         ) {
-            // Section: Modul Pemusnahan
-            DrawerSectionLabel("MODUL PEMUSNAHAN")
-            modulItems.forEach { item ->
+            DrawerSectionLabel("MENU UTAMA")
+            menuItems.forEach { item ->
                 DrawerMenuItem(
                     item        = item,
                     isActive    = currentRoute == item.route,
                     onNavigate  = onNavigate
-                )
-            }
-
-            HorizontalDivider(
-                modifier  = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                thickness = 0.5.dp,
-                color     = BorderGray
-            )
-
-            // Section: Akun
-            DrawerSectionLabel("AKUN")
-            akunItems.forEach { item ->
-                DrawerMenuItem(
-                    item       = item,
-                    isActive   = currentRoute == item.route,
-                    onNavigate = onNavigate
                 )
             }
         }
@@ -170,7 +153,7 @@ fun PemusnahanDrawerContent(
             ),
             isActive   = false,
             isLogout   = true,
-            onNavigate = { onLogout() }
+            onNavigate = { showLogoutDialog = true }
         )
         Text(
             text     = "SiARSIP v1.0 • BPKPAD Balangan",

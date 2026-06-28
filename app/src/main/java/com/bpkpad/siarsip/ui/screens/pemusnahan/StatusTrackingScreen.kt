@@ -39,6 +39,7 @@ import com.bpkpad.siarsip.feature.arsip.domain.usecase.StageStatus
 import com.bpkpad.siarsip.feature.arsip.presentation.StatusTrackingViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
+import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -107,6 +108,12 @@ fun StatusTrackingScreen(
     ) {
         Scaffold(
             containerColor = BgDashboard,
+            bottomBar = {
+                PemusnahanBottomBar(
+                    currentRoute = DrawerRoutes.TRACKING,
+                    onNavigate   = onNavigate
+                )
+            },
             topBar = {
                 TrackingTopBar(
                     onMenuClick = { scope.launch { drawerState.open() } }

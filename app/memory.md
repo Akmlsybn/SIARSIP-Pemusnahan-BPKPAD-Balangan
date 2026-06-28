@@ -330,8 +330,7 @@ data class DisposeArchivePayload(
 | BeritaAcara | ✅ Selesai | Terhubung ke BeritaAcaraViewModel & Room DB (FAB dan form pembuatan BA baru dengan list penandatangan dinamis) |
 | DetailBeritaAcara | ✅ Selesai | Terhubung ke DetailBeritaAcaraViewModel & Room DB (ditambahkan Kartu Dasar Hukum Pemusnahan untuk merender nomor surat pertimbangan & persetujuan Bupati/ANRI) |
 | LogRiwayat | ✅ Selesai | Terhubung ke LogRiwayatViewModel & Room DB |
-| Profil | ✅ Selesai | Menggunakan UI asli dari teman & terintegrasi penuh ke NavGraph |
-| Pengaturan | ✅ Selesai | Menggunakan UI premium baru & terintegrasi penuh ke NavGraph |
+| Profil | ✅ Selesai | Menggunakan UI asli dari teman & terintegrasi penuh ke NavGraph (ditambahkan konfirmasi keluar) |
 | Auth ViewModel | ✅ Selesai | Mengelola State & terhubung ke UseCase |
 | Supabase Integration | 🔲 Belum ada | Dependency belum ditambahkan |
 | State Machine Logic | ✅ Selesai | Validasi state di UseCase (UpdateStatus & CreateBA) |

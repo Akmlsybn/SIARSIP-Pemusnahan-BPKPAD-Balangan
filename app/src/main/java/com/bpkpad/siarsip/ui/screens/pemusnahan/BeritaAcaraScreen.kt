@@ -34,6 +34,7 @@ import com.bpkpad.siarsip.feature.arsip.domain.model.Penandatangan
 import com.bpkpad.siarsip.feature.arsip.presentation.BeritaAcaraViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
+import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -102,6 +103,12 @@ fun BeritaAcaraScreen(
     ) {
         Scaffold(
             containerColor = BgDashboard,
+            bottomBar = {
+                PemusnahanBottomBar(
+                    currentRoute = DrawerRoutes.BERITA_ACARA,
+                    onNavigate   = onNavigate
+                )
+            },
             topBar = {
                 BATopBar(onMenuClick = { scope.launch { drawerState.open() } })
             },

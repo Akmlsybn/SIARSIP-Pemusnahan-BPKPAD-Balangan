@@ -36,6 +36,7 @@ import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
 import com.bpkpad.siarsip.feature.arsip.presentation.DaftarUsulMusnahViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
+import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -106,13 +107,26 @@ fun DaftarUsulMusnahScreen(
         // ── Scaffold ──────────────────────────────────────────
         Scaffold(
             containerColor = BgDashboard,
+            bottomBar = {
+                PemusnahanBottomBar(
+                    currentRoute = DrawerRoutes.DAFTAR_USUL_MUSNAH,
+                    onNavigate   = onNavigate
+                )
+            },
             topBar = {
                 DaftarTopBar(
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
             },
-            bottomBar = {
-                BuatBerkasButton(onClick = onBuatBerkas)
+            floatingActionButton = {
+                ExtendedFloatingActionButton(
+                    onClick        = onBuatBerkas,
+                    containerColor = GreenPrimary,
+                    contentColor   = Color.White,
+                    shape          = RoundedCornerShape(16.dp),
+                    icon           = { Icon(Icons.Filled.Add, null) },
+                    text           = { Text("Buat Berkas", fontWeight = FontWeight.Bold) }
+                )
             }
         ) { padding ->
             LazyColumn(

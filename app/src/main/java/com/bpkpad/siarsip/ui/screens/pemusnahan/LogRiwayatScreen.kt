@@ -34,6 +34,7 @@ import com.bpkpad.siarsip.feature.arsip.domain.model.LogEntry
 import com.bpkpad.siarsip.feature.arsip.presentation.LogRiwayatViewModel
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
+import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -100,6 +101,12 @@ fun LogRiwayatScreen(
     ) {
         Scaffold(
             containerColor = BgDashboard,
+            bottomBar = {
+                PemusnahanBottomBar(
+                    currentRoute = DrawerRoutes.LOG_RIWAYAT,
+                    onNavigate   = onNavigate
+                )
+            },
             topBar = {
                 LogTopBar(
                     onMenuClick = { scope.launch { drawerState.open() } }
