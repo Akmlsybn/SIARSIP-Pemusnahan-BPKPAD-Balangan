@@ -60,4 +60,12 @@ object DatabaseModule {
     fun provideAuditLogDao(appDatabase: AppDatabase): AuditLogDao {
         return appDatabase.auditLogDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideSharedPreferences(
+        @ApplicationContext context: Context
+    ): android.content.SharedPreferences {
+        return context.getSharedPreferences("siarsip_preferences", Context.MODE_PRIVATE)
+    }
 }

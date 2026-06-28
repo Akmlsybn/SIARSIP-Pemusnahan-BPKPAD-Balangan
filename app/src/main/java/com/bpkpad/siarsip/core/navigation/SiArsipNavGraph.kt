@@ -31,11 +31,12 @@ import com.bpkpad.siarsip.ui.screens.pengaturan.PengaturanScreen
  * Helper navigasi generik dipakai semua drawer (PemusnahanDrawerContent.onNavigate)
  * supaya satu fungsi bisa nge-handle semua DrawerRoutes string.
  */
-private fun NavHostController.navigateToRoute(route: String) {
+private fun NavHostController.navigateToRoute(route: String, onLogout: () -> Unit) {
     if (currentDestination?.route == route) return
 
     when (route) {
         "logout" -> {
+            onLogout()
             navigate(Screen.Login.route) {
                 popUpTo(0) { inclusive = true }
             }
@@ -53,7 +54,8 @@ private fun NavHostController.navigateToRoute(route: String) {
 @Composable
 fun SiArsipNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Login.route
+    startDestination: String = Screen.Login.route,
+    onLogout: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -81,16 +83,15 @@ fun SiArsipNavGraph(
             }
 
             LoginScreen(
-                onLoginClick = { username, password ->
-                    viewModel.login(username, password)
-                },
-                onForgotPasswordClick = { /* TODO */ }
+                onLoginClick = { username, password, remember ->
+                    viewModel.login(username, password, remember)
+                }
             )
         }
 
         composable(Screen.Dashboard.route) {
             DashboardScreen(
-                onNavigate = { route -> navController.navigateToRoute(route) },
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) },
                 onModuleClick = { moduleKey ->
                     when (moduleKey) {
                         "pemusnahan" -> navController.navigate(Screen.DaftarUsulMusnah.route)
@@ -103,14 +104,14 @@ fun SiArsipNavGraph(
 
         composable(Screen.DaftarArsip.route) {
             DaftarArsipScreen(
-                onNavigate = { route -> navController.navigateToRoute(route) }
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) }
             )
         }
 
         composable(Screen.DaftarUsulMusnah.route) {
             DaftarUsulMusnahScreen(
                 onBuatBerkas = { navController.navigate(Screen.BuatBerkasUsulMusnah.route) },
-                onNavigate = { route -> navController.navigateToRoute(route) }
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) }
             )
         }
 
@@ -123,13 +124,13 @@ fun SiArsipNavGraph(
 
         composable(Screen.StatusTracking.route) {
             StatusTrackingScreen(
-                onNavigate = { route -> navController.navigateToRoute(route) }
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) }
             )
         }
 
         composable(Screen.BeritaAcara.route) {
             BeritaAcaraScreen(
-                onNavigate = { route -> navController.navigateToRoute(route) },
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) },
                 onCardClick = { ba ->
                     navController.navigate(Screen.DetailBeritaAcara.createRoute(ba.id))
                 }
@@ -156,23 +157,23 @@ fun SiArsipNavGraph(
 
         composable(Screen.LogRiwayat.route) {
             LogRiwayatScreen(
-                onNavigate = { route -> navController.navigateToRoute(route) }
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) }
             )
         }
 
         // Profil & Pengaturan
         composable(Screen.Profil.route) {
             ProfileScreen(
-                onNavigateDashboard = { navController.navigateToRoute(Screen.Dashboard.route) },
-                onNavigateArsip = { navController.navigateToRoute(Screen.DaftarArsip.route) },
-                onNavigateAktivitas = { navController.navigateToRoute(Screen.LogRiwayat.route) },
-                onLogout = { navController.navigateToRoute("logout") },
+                onNavigateDashboard = { navController.navigateToRoute(Screen.Dashboard.route, onLogout) },
+                onNavigateArsip = { navController.navigateToRoute(Screen.DaftarArsip.route, onLogout) },
+                onNavigateAktivitas = { navController.navigateToRoute(Screen.LogRiwayat.route, onLogout) },
+                onLogout = { navController.navigateToRoute("logout", onLogout) },
                 onBack = { navController.popBackStack() }
             )
         }
         composable(Screen.Pengaturan.route) {
             PengaturanScreen(
-                onNavigate = { route -> navController.navigateToRoute(route) }
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) }
             )
         }
     }

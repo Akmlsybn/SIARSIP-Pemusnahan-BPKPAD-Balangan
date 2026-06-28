@@ -320,7 +320,7 @@ data class DisposeArchivePayload(
 
 | Fitur | Status | Catatan |
 |-------|--------|---------|
-| Login Screen | ✅ UI selesai | Terhubung ke LoginViewModel & StateFlow |
+| Login Screen | ✅ Selesai | Terhubung ke LoginViewModel & StateFlow (ditambahkan fungsionalitas 'Remember Me' auto-login dengan persistensi SharedPreferences) |
 | Dashboard | ✅ UI selesai | Data dummy |
 | DaftarArsip Screen | ✅ UI selesai | Terhubung ke DaftarArsipViewModel & Room DB |
 | DaftarUsulMusnah | ✅ Selesai | Terhubung ke DaftarUsulMusnahViewModel & Room DB |

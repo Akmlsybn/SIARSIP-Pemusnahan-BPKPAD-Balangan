@@ -25,8 +25,7 @@ import com.bpkpad.siarsip.ui.theme.*
 
 @Composable
 fun LoginScreen(
-    onLoginClick: (username: String, password: String) -> Unit = { _, _ -> },
-    onForgotPasswordClick: () -> Unit = {}
+    onLoginClick: (username: String, password: String, remember: Boolean) -> Unit = { _, _, _ -> }
 ) {
     var username   by remember { mutableStateOf("") }
     var password   by remember { mutableStateOf("") }
@@ -117,7 +116,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Remember me + Forgot Password
+            // Remember me
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -134,18 +133,7 @@ fun LoginScreen(
                 Text(
                     text = "Remember me",
                     fontSize = 13.sp,
-                    color = TextBody,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "Forgot Password ?",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = GreenPrimary,
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onForgotPasswordClick() }
+                    color = TextBody
                 )
             }
 
@@ -168,7 +156,7 @@ fun LoginScreen(
                         passwordError = null
                     }
                     if (!hasError) {
-                        onLoginClick(username, password)
+                        onLoginClick(username, password, rememberMe)
                     }
                 },
                 modifier = Modifier

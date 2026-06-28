@@ -5,7 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.bpkpad.siarsip.core.database.AppDatabase
+import com.bpkpad.siarsip.core.navigation.Screen
 import com.bpkpad.siarsip.core.navigation.SiArsipNavGraph
+import com.bpkpad.siarsip.feature.auth.domain.repository.AuthRepository
 import com.bpkpad.siarsip.ui.theme.SiARSIPTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +21,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var appDatabase: AppDatabase
 
+    @Inject
+    lateinit var authRepository: AuthRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -28,9 +33,17 @@ class MainActivity : ComponentActivity() {
             appDatabase.userDao().countUsers()
         }
 
+        val isRemembered = authRepository.isRememberMe() && authRepository.getLoggedInUser() != null
+        val startDestination = if (isRemembered) Screen.Dashboard.route else Screen.Login.route
+
         setContent {
             SiARSIPTheme {
-                SiArsipNavGraph()
+                SiArsipNavGraph(
+                    startDestination = startDestination,
+                    onLogout = {
+                        authRepository.logout()
+                    }
+                )
             }
         }
     }
