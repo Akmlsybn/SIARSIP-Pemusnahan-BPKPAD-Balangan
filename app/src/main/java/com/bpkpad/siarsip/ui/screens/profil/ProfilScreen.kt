@@ -26,6 +26,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bpkpad.siarsip.ui.theme.*
+import com.bpkpad.siarsip.ui.components.DrawerRoutes
+import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 
 // ─────────────────────────────────────────────────────────────
 //  Data Model
@@ -55,9 +57,7 @@ fun ProfileScreen(
     onActivityHistory: () -> Unit = {},
     onHelpSupport: () -> Unit = {},
     onLogout: () -> Unit = {},
-    onNavigateDashboard: () -> Unit = {},
-    onNavigateArsip: () -> Unit = {},
-    onNavigateAktivitas: () -> Unit = {}
+    onNavigate: (String) -> Unit = {}
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -103,10 +103,9 @@ fun ProfileScreen(
         containerColor = BgDashboard,
         topBar = { ProfileTopBar() },
         bottomBar = {
-            ProfileBottomBar(
-                onDashboard = onNavigateDashboard,
-                onArsip     = onNavigateArsip,
-                onAktivitas = onNavigateAktivitas
+            PemusnahanBottomBar(
+                currentRoute = DrawerRoutes.PROFIL,
+                onNavigate   = onNavigate
             )
         }
     ) { padding ->

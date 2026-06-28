@@ -26,6 +26,7 @@ import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
 import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
+import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 
 // ─────────────────────────────────────────────────────────────
 //  DashboardScreen
@@ -70,7 +71,12 @@ fun DashboardScreen(
                     }
                 )
             },
-            bottomBar = { DashboardBottomBar() }
+            bottomBar = {
+                PemusnahanBottomBar(
+                    currentRoute = DrawerRoutes.DASHBOARD,
+                    onNavigate   = onNavigate
+                )
+            }
         ) { padding ->
             Column(
                 modifier = Modifier

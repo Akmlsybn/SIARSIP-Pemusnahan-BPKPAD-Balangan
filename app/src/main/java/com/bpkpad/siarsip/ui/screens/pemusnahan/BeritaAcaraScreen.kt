@@ -243,9 +243,21 @@ fun BeritaAcaraScreen(
     }
 
     if (showCreateDialog) {
+        val textFieldColors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TextHead,
+            unfocusedTextColor = TextBody,
+            focusedBorderColor = GreenPrimary,
+            unfocusedBorderColor = BorderGray,
+            focusedLabelColor = GreenPrimary,
+            unfocusedLabelColor = TextHint,
+            cursorColor = GreenPrimary
+        )
+
         AlertDialog(
             onDismissRequest = { if (createState !is ResultState.Loading) showCreateDialog = false },
-            title = { Text("Buat Berita Acara Pemusnahan", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            title = { Text("Buat Berita Acara Pemusnahan", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextHead) },
+            containerColor = CardWhite,
+            shape = RoundedCornerShape(16.dp),
             text = {
                 val scrollState = rememberScrollState()
                 Column(
@@ -272,17 +284,19 @@ fun BeritaAcaraScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 disabledBorderColor = BorderGray,
                                 disabledTextColor = if (selectedProposalId.isNotBlank()) TextHead else TextHint,
-                                disabledLabelColor = TextHint
+                                disabledLabelColor = TextHint,
+                                disabledPlaceholderColor = TextHint
                             ),
                             shape = RoundedCornerShape(8.dp)
                         )
                         DropdownMenu(
                             expanded = proposalDropdownExpanded,
-                            onDismissRequest = { proposalDropdownExpanded = false }
+                            onDismissRequest = { proposalDropdownExpanded = false },
+                            modifier = Modifier.background(CardWhite)
                         ) {
                             approvedProposals.forEach { prop ->
                                 DropdownMenuItem(
-                                    text = { Text("${prop.nomorBerkas} - ${prop.perihal}") },
+                                    text = { Text("${prop.nomorBerkas} - ${prop.perihal}", color = TextHead) },
                                     onClick = {
                                         selectedProposalId = prop.id
                                         proposalDropdownExpanded = false
@@ -309,7 +323,8 @@ fun BeritaAcaraScreen(
                         label = { Text("Nomor Berita Acara") },
                         singleLine = true,
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = textFieldColors
                     )
 
                     OutlinedTextField(
@@ -319,7 +334,8 @@ fun BeritaAcaraScreen(
                         placeholder = { Text("Contoh: 28 Juni 2026") },
                         singleLine = true,
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = textFieldColors
                     )
 
                     OutlinedTextField(
@@ -327,7 +343,8 @@ fun BeritaAcaraScreen(
                         onValueChange = { keterangan = it },
                         label = { Text("Keterangan Tambahan") },
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = textFieldColors
                     )
 
                     Spacer(Modifier.height(4.dp))
@@ -395,7 +412,8 @@ fun BeritaAcaraScreen(
                                     label = { Text("Nama Lengkap") },
                                     singleLine = true,
                                     shape = RoundedCornerShape(6.dp),
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = textFieldColors
                                 )
 
                                 OutlinedTextField(
@@ -406,7 +424,8 @@ fun BeritaAcaraScreen(
                                     label = { Text("Jabatan") },
                                     singleLine = true,
                                     shape = RoundedCornerShape(6.dp),
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = textFieldColors
                                 )
                                 
                                 if (sig.role != "PENANGGUNG_JAWAB" && sig.role != "SAKSI_1") {
@@ -418,16 +437,18 @@ fun BeritaAcaraScreen(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             RadioButton(
                                                 selected = sig.role == "SAKSI_2",
-                                                onClick = { signatoriesList[index] = sig.copy(role = "SAKSI_2", jabatan = "Saksi 2") }
+                                                onClick = { signatoriesList[index] = sig.copy(role = "SAKSI_2", jabatan = "Saksi 2") },
+                                                colors = RadioButtonDefaults.colors(selectedColor = GreenPrimary, unselectedColor = TextHint)
                                             )
-                                            Text("Saksi 2", fontSize = 11.sp)
+                                            Text("Saksi 2", fontSize = 11.sp, color = TextHead)
                                         }
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             RadioButton(
                                                 selected = sig.role == "SAKSI_LAINNYA",
-                                                onClick = { signatoriesList[index] = sig.copy(role = "SAKSI_LAINNYA") }
+                                                onClick = { signatoriesList[index] = sig.copy(role = "SAKSI_LAINNYA") },
+                                                colors = RadioButtonDefaults.colors(selectedColor = GreenPrimary, unselectedColor = TextHint)
                                             )
-                                            Text("Saksi Lainnya", fontSize = 11.sp)
+                                            Text("Saksi Lainnya", fontSize = 11.sp, color = TextHead)
                                         }
                                     }
                                 }
@@ -463,12 +484,27 @@ fun BeritaAcaraScreen(
                         )
                     },
                     enabled = isSubmitEnabled && createState !is ResultState.Loading,
-                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenPrimary,
+                        contentColor = Color.White,
+                        disabledContainerColor = GreenPrimary.copy(alpha = 0.4f),
+                        disabledContentColor = Color.White.copy(alpha = 0.7f)
+                    )
                 ) {
                     if (createState is ResultState.Loading) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Simpan BA")
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Simpan BA", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -477,7 +513,7 @@ fun BeritaAcaraScreen(
                     onClick = { showCreateDialog = false },
                     enabled = createState !is ResultState.Loading
                 ) {
-                    Text("Batal")
+                    Text("Batal", color = DangerText, fontWeight = FontWeight.Bold)
                 }
             }
         )

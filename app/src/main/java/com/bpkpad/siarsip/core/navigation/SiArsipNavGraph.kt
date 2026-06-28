@@ -163,11 +163,9 @@ fun SiArsipNavGraph(
         // Profil
         composable(Screen.Profil.route) {
             ProfileScreen(
-                onNavigateDashboard = { navController.navigateToRoute(Screen.Dashboard.route, onLogout) },
-                onNavigateArsip = { navController.navigateToRoute(Screen.DaftarArsip.route, onLogout) },
-                onNavigateAktivitas = { navController.navigateToRoute(Screen.LogRiwayat.route, onLogout) },
-                onLogout = { navController.navigateToRoute("logout", onLogout) },
-                onBack = { navController.popBackStack() }
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) },
+                onLogout   = { navController.navigateToRoute("logout", onLogout) },
+                onBack     = { navController.popBackStack() }
             )
         }
     }

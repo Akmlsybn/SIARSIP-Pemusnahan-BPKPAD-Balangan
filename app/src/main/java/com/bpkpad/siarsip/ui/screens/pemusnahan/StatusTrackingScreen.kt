@@ -226,9 +226,21 @@ fun StatusTrackingScreen(
         var perihalSurat by remember { mutableStateOf("") }
         var selectedPersetujuan by remember { mutableStateOf("BUPATI") }
 
+        val textFieldColors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TextHead,
+            unfocusedTextColor = TextBody,
+            focusedBorderColor = GreenPrimary,
+            unfocusedBorderColor = BorderGray,
+            focusedLabelColor = GreenPrimary,
+            unfocusedLabelColor = TextHint,
+            cursorColor = GreenPrimary
+        )
+
         AlertDialog(
             onDismissRequest = { if (!isUpdating) showUpdateDialogFor = null },
-            title = { Text("Update Status / Catat Balasan", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            title = { Text("Update Status / Catat Balasan", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextHead) },
+            containerColor = CardWhite,
+            shape = RoundedCornerShape(16.dp),
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Nomor Berkas: ${berkas.nomor}", fontSize = 12.sp, color = TextHint)
@@ -249,7 +261,8 @@ fun StatusTrackingScreen(
                                 label = { Text("Nomor Surat Pertimbangan") },
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = textFieldColors
                             )
                             OutlinedTextField(
                                 value = perihalSurat,
@@ -257,7 +270,8 @@ fun StatusTrackingScreen(
                                 label = { Text("Perihal Surat Pertimbangan") },
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = textFieldColors
                             )
                         } else if (activeStage.name == "Pengiriman ke Kepala Daerah") {
                             Text("Pilih Otoritas Persetujuan Akhir:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextHead)
@@ -269,16 +283,18 @@ fun StatusTrackingScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     RadioButton(
                                         selected = selectedPersetujuan == "BUPATI",
-                                        onClick = { selectedPersetujuan = "BUPATI" }
+                                        onClick = { selectedPersetujuan = "BUPATI" },
+                                        colors = RadioButtonDefaults.colors(selectedColor = GreenPrimary, unselectedColor = TextHint)
                                     )
-                                    Text("Bupati", fontSize = 13.sp)
+                                    Text("Bupati", fontSize = 13.sp, color = TextHead)
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     RadioButton(
                                         selected = selectedPersetujuan == "ANRI",
-                                        onClick = { selectedPersetujuan = "ANRI" }
+                                        onClick = { selectedPersetujuan = "ANRI" },
+                                        colors = RadioButtonDefaults.colors(selectedColor = GreenPrimary, unselectedColor = TextHint)
                                     )
-                                    Text("ANRI", fontSize = 13.sp)
+                                    Text("ANRI", fontSize = 13.sp, color = TextHead)
                                 }
                             }
                             
@@ -288,7 +304,8 @@ fun StatusTrackingScreen(
                                 label = { Text("Nomor Surat Persetujuan") },
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = textFieldColors
                             )
                             OutlinedTextField(
                                 value = perihalSurat,
@@ -296,7 +313,8 @@ fun StatusTrackingScreen(
                                 label = { Text("Perihal Surat Persetujuan") },
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = textFieldColors
                             )
                         }
                     } else {
@@ -318,12 +336,17 @@ fun StatusTrackingScreen(
                                     )
                                 },
                                 enabled = !isUpdating && nomorSurat.isNotBlank() && perihalSurat.isNotBlank(),
-                                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GreenPrimary,
+                                    contentColor = Color.White,
+                                    disabledContainerColor = GreenPrimary.copy(alpha = 0.4f),
+                                    disabledContentColor = Color.White.copy(alpha = 0.7f)
+                                )
                             ) {
                                 if (isUpdating) {
                                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                 } else {
-                                    Text("Verifikasi (Setuju Usulan)")
+                                    Text("Verifikasi (Setuju Usulan)", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -339,12 +362,17 @@ fun StatusTrackingScreen(
                                     )
                                 },
                                 enabled = !isUpdating && nomorSurat.isNotBlank() && perihalSurat.isNotBlank(),
-                                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GreenPrimary,
+                                    contentColor = Color.White,
+                                    disabledContainerColor = GreenPrimary.copy(alpha = 0.4f),
+                                    disabledContentColor = Color.White.copy(alpha = 0.7f)
+                                )
                             ) {
                                 if (isUpdating) {
                                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                 } else {
-                                    Text("Setujui Usulan")
+                                    Text("Setujui Usulan", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -354,9 +382,12 @@ fun StatusTrackingScreen(
                                     showUpdateDialogFor = null
                                     onNavigate("berita_acara")
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GreenPrimary,
+                                    contentColor = Color.White
+                                )
                             ) {
-                                Text("Buat Berita Acara")
+                                Text("Buat Berita Acara", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -367,7 +398,7 @@ fun StatusTrackingScreen(
                     onClick = { showUpdateDialogFor = null },
                     enabled = !isUpdating
                 ) {
-                    Text("Tutup")
+                    Text("Tutup", color = TextHead, fontWeight = FontWeight.Bold)
                 }
             }
         )

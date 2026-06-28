@@ -326,8 +326,8 @@ data class DisposeArchivePayload(
 | DaftarUsulMusnah | ✅ Selesai | Terhubung ke DaftarUsulMusnahViewModel & Room DB |
 | BuatBerkasUsulMusnah | ✅ Selesai | Terhubung ke BuatBerkasUsulMusnahViewModel, Room DB & transaksi creation proposal |
 | DetailBerkasUsulMusnah | ✅ UI selesai | Menggunakan domain model Arsip (siap dihubungkan) |
-| StatusTracking | ✅ Selesai | Terhubung ke StatusTrackingViewModel, GetTrackingInfoUseCase & dialog Catat Balasan (input nomor surat pertimbangan & persetujuan akhir Bupati/ANRI) |
-| BeritaAcara | ✅ Selesai | Terhubung ke BeritaAcaraViewModel & Room DB (FAB dan form pembuatan BA baru dengan list penandatangan dinamis) |
+| StatusTracking | ✅ Selesai | Terhubung ke StatusTrackingViewModel & Room DB (dialog diperbarui dengan warna latar belakang putih bersih & teks kontras tinggi) |
+| BeritaAcara | ✅ Selesai | Terhubung ke BeritaAcaraViewModel & Room DB (dialog pembuatan BA baru diperbarui dengan warna latar belakang putih & teks kontras tinggi) |
 | DetailBeritaAcara | ✅ Selesai | Terhubung ke DetailBeritaAcaraViewModel & Room DB (ditambahkan Kartu Dasar Hukum Pemusnahan untuk merender nomor surat pertimbangan & persetujuan Bupati/ANRI) |
 | LogRiwayat | ✅ Selesai | Terhubung ke LogRiwayatViewModel & Room DB |
 | Profil | ✅ Selesai | Menggunakan UI asli dari teman & terintegrasi penuh ke NavGraph (ditambahkan konfirmasi keluar) |
