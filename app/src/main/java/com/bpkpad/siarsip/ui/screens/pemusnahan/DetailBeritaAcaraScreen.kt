@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
 fun DetailBeritaAcaraScreen(
     onBack: () -> Unit = {},
     onUnduhPdf: () -> Unit = {},
-    onLihatArsip: () -> Unit = {},
+    onLihatArsip: (String) -> Unit = {},
     onCetak: () -> Unit = {},
     viewModel: DetailBeritaAcaraViewModel = hiltViewModel()
 ) {
@@ -99,7 +99,11 @@ fun DetailBeritaAcaraScreen(
         },
         bottomBar = {
             DetailBABottomBar(
-                onLihatArsip = onLihatArsip,
+                onLihatArsip = {
+                    baItem?.let { ba ->
+                        onLihatArsip(ba.id)
+                    }
+                },
                 onCetak      = {
                     baItem?.let { ba ->
                         baToExport = ba

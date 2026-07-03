@@ -76,9 +76,14 @@ data class FilterCondition(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DaftarArsipScreen(
+    beritaAcaraId: String? = null,
     onNavigate: (String) -> Unit = {},
     viewModel: DaftarArsipViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(beritaAcaraId) {
+        viewModel.setBeritaAcaraFilter(beritaAcaraId)
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     val archivesList = (uiState as? ResultState.Success)?.data ?: emptyList()
 
@@ -97,7 +102,10 @@ fun DaftarArsipScreen(
     val scope       = rememberCoroutineScope()
 
     val moduls = listOf("Semua", "Keuangan", "Non-Keuangan", "Peminjaman")
-    val years  = listOf("Semua", "2019", "2018", "2017", "2016")
+    val years = remember(archivesList) {
+        val uniqueYears = archivesList.map { it.tahun }.distinct().sortedDescending()
+        listOf("Semua") + uniqueYears
+    }
 
     // Filter logic
     val filteredList = archivesList.filter { item ->
@@ -168,6 +176,42 @@ fun DaftarArsipScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
+                // Banner filter berita acara
+                val activeBaFilter by viewModel.beritaAcaraFilter.collectAsState()
+                if (activeBaFilter != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                        colors = CardDefaults.cardColors(containerColor = GreenLight),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, GreenMid)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Filled.FilterList, null, tint = GreenPrimary, modifier = Modifier.size(18.dp))
+                                Text(
+                                    "Menampilkan arsip yang dimusnahkan",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextHead
+                                )
+                            }
+                            IconButton(
+                                onClick = { viewModel.clearBeritaAcaraFilter() },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(Icons.Filled.Close, null, tint = TextHint, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+
                 // ── Search + Quick Filters ──────────────────────
                 Column(
                     modifier = Modifier

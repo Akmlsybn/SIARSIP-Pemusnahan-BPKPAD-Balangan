@@ -76,9 +76,12 @@ fun BeritaAcaraScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
 
-    val filters = listOf("Semua", "2025", "2024", "2023")
-
     val uiState by viewModel.uiState.collectAsState()
+    val beritaAcaraList = (uiState as? ResultState.Success)?.data ?: emptyList()
+    val filters = remember(beritaAcaraList) {
+        val uniqueYears = beritaAcaraList.map { it.tahun }.distinct().sortedDescending()
+        listOf("Semua") + uniqueYears
+    }
 
     ModalNavigationDrawer(
         drawerState   = drawerState,

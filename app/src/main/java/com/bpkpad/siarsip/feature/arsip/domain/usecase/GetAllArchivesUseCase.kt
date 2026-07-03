@@ -10,8 +10,6 @@ class GetAllArchivesUseCase @Inject constructor(
     private val repository: ArsipRepository
 ) {
     operator fun invoke(): Flow<List<Arsip>> {
-        return repository.getAllArchives().map { archives ->
-            archives.filter { it.status != "DISPOSED" }
-        }
+        return repository.getAllArchives()
     }
 }

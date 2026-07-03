@@ -8,6 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -101,8 +103,19 @@ fun SiArsipNavGraph(
             )
         }
 
-        composable(Screen.DaftarArsip.route) {
+        composable(
+            route = Screen.DaftarArsip.route,
+            arguments = listOf(
+                navArgument("beritaAcaraId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val beritaAcaraId = backStackEntry.arguments?.getString("beritaAcaraId")
             DaftarArsipScreen(
+                beritaAcaraId = beritaAcaraId,
                 onNavigate = { route -> navController.navigateToRoute(route, onLogout) }
             )
         }
@@ -140,7 +153,7 @@ fun SiArsipNavGraph(
             DetailBeritaAcaraScreen(
                 onBack = { navController.popBackStack() },
                 onUnduhPdf = { /* TODO */ },
-                onLihatArsip = { navController.navigate(Screen.DaftarArsip.route) },
+                onLihatArsip = { baId -> navController.navigate(Screen.DaftarArsip.createRoute(baId)) },
                 onCetak = { /* TODO */ }
             )
         }

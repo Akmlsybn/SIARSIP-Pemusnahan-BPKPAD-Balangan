@@ -322,7 +322,7 @@ data class DisposeArchivePayload(
 |-------|--------|---------|
 | Login Screen | ✅ Selesai | Terhubung ke LoginViewModel & StateFlow (ditambahkan fungsionalitas 'Remember Me' auto-login dengan persistensi SharedPreferences) |
 | Dashboard | ✅ UI selesai | Data dummy |
-| DaftarArsip Screen | ✅ UI selesai | Terhubung ke DaftarArsipViewModel & Room DB |
+| DaftarArsip Screen | ✅ Selesai | Terhubung ke DaftarArsipViewModel & Room DB (ditambahkan filter otomatis berdasarkan beritaAcaraId di level ViewModel dengan UI banner filter interaktif) |
 | DaftarUsulMusnah | ✅ Selesai | Terhubung ke DaftarUsulMusnahViewModel & Room DB (ditambahkan fitur Export Excel .xlsx via SAF untuk berkas APPROVED & DISPOSED) |
 | BuatBerkasUsulMusnah | ✅ Selesai | Terhubung ke BuatBerkasUsulMusnahViewModel, Room DB & transaksi creation proposal |
 | DetailBerkasUsulMusnah | ✅ UI selesai | Menggunakan domain model Arsip (siap dihubungkan) |

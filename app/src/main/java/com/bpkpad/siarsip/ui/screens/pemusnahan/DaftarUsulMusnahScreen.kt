@@ -93,7 +93,10 @@ fun DaftarUsulMusnahScreen(
     )
 
     val filters = listOf("Semua", "Keuangan", "Non-Keuangan", "Peminjaman")
-    val years   = listOf("Semua", "2026", "2025", "2019", "2018", "2017", "2016")
+    val years = remember(proposalsList) {
+        val uniqueYears = proposalsList.map { it.tanggal.substringAfterLast("/") }.distinct().sortedDescending()
+        listOf("Semua") + uniqueYears
+    }
 
     val filteredList = proposalsList.filter { item ->
         val itemYear = item.tanggal.substringAfterLast("/")

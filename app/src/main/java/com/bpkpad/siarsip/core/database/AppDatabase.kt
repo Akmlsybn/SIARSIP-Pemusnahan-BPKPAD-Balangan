@@ -24,7 +24,7 @@ import com.bpkpad.siarsip.core.database.entity.AuditLogEntity
         PenandatanganEntity::class,
         AuditLogEntity::class
     ],
-    version = 5,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

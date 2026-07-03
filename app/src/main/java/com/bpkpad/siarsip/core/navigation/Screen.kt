@@ -4,7 +4,10 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Dashboard : Screen("dashboard")
 
-    object DaftarArsip : Screen("daftar_arsip")
+    object DaftarArsip : Screen("daftar_arsip?beritaAcaraId={beritaAcaraId}") {
+        fun createRoute(beritaAcaraId: String? = null) = 
+            if (beritaAcaraId != null) "daftar_arsip?beritaAcaraId=$beritaAcaraId" else "daftar_arsip"
+    }
     object DaftarUsulMusnah : Screen("daftar_usul_musnah")
     object BuatBerkasUsulMusnah : Screen("buat_berkas_usul_musnah")
     object DetailBerkasUsulMusnah : Screen("detail_berkas_usul_musnah/{berkasNomor}") {
