@@ -1,66 +1,73 @@
 package com.bpkpad.siarsip.ui.screens.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bpkpad.siarsip.ui.theme.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.feature.auth.presentation.ProfilViewModel
+import com.bpkpad.siarsip.feature.auth.presentation.UserProfileState
 import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
-
-// ─────────────────────────────────────────────────────────────
-//  Data Model
-// ─────────────────────────────────────────────────────────────
-data class UserProfile(
-    val nama: String,
-    val role: String,        // "Arsiparis BPKPAD"
-    val idPegawai: String,   // "BAL-4920"
-    val avatarUrl: String? = null
-)
-
-val dummyUserProfile = UserProfile(
-    nama      = "Lorem Ipsum",
-    role      = "Arsiparis BPKPAD",
-    idPegawai = "BAL-4920"
-)
+import com.bpkpad.siarsip.ui.theme.*
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
 // ─────────────────────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    user: UserProfile = dummyUserProfile,
-    onBack: () -> Unit = {},
-    onEditPhoto: () -> Unit = {},
-    onProfileSettings: () -> Unit = {},
-    onActivityHistory: () -> Unit = {},
-    onHelpSupport: () -> Unit = {},
+    onNavigate: (String) -> Unit = {},
     onLogout: () -> Unit = {},
-    onNavigate: (String) -> Unit = {}
+    onBack: () -> Unit = {},
+    viewModel: ProfilViewModel = hiltViewModel()
 ) {
-    var showLogoutDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val userProfile by viewModel.userProfile.collectAsState()
 
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var showGuideDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
+
+    // State untuk Dialog Password
+    var oldPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    val user = userProfile ?: UserProfileState(
+        username = "admin",
+        namaPegawai = "Administrator SIARSIP",
+        nip = "198904122015031002",
+        jabatan = "Arsiparis Ahli Pertama - BPKPAD Balangan"
+    )
+
+    // Dialog Konfirmasi Keluar
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -83,6 +90,7 @@ fun ProfileScreen(
                 TextButton(
                     onClick = {
                         showLogoutDialog = false
+                        viewModel.logout()
                         onLogout()
                     }
                 ) {
@@ -92,6 +100,244 @@ fun ProfileScreen(
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
                     Text(text = "Batal", color = TextHint)
+                }
+            },
+            containerColor = CardWhite,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // Dialog Ubah Kata Sandi
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showPasswordDialog = false
+                oldPassword = ""
+                newPassword = ""
+                confirmPassword = ""
+            },
+            title = {
+                Text(
+                    text = "Ubah Kata Sandi",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = TextHead
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+                ) {
+                    OutlinedTextField(
+                        value = oldPassword,
+                        onValueChange = { oldPassword = it },
+                        label = { Text("Kata Sandi Lama", fontSize = 12.sp) },
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = null,
+                                    tint = TextHint
+                                )
+                            }
+                        },
+                        colors = arsipFieldColors(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("Kata Sandi Baru", fontSize = 12.sp) },
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        colors = arsipFieldColors(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text("Konfirmasi Kata Sandi Baru", fontSize = 12.sp) },
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        colors = arsipFieldColors(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                    shape = RoundedCornerShape(8.dp),
+                    onClick = {
+                        if (oldPassword.isBlank() || newPassword.isBlank() || confirmPassword.isBlank()) {
+                            Toast.makeText(context, "Semua bidang wajib diisi!", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (newPassword != confirmPassword) {
+                            Toast.makeText(context, "Konfirmasi kata sandi baru tidak cocok!", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        viewModel.changePassword(oldPassword, newPassword) { result ->
+                            result.onSuccess {
+                                Toast.makeText(context, "Kata sandi berhasil diubah!", Toast.LENGTH_SHORT).show()
+                                showPasswordDialog = false
+                                oldPassword = ""
+                                newPassword = ""
+                                confirmPassword = ""
+                            }.onFailure {
+                                Toast.makeText(context, it.message ?: "Gagal mengubah kata sandi", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                ) {
+                    Text("Simpan", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        showPasswordDialog = false
+                        oldPassword = ""
+                        newPassword = ""
+                        confirmPassword = ""
+                    }
+                ) {
+                    Text("Batal", color = TextHint)
+                }
+            },
+            containerColor = CardWhite,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // Dialog Panduan Penggunaan
+    if (showGuideDialog) {
+        AlertDialog(
+            onDismissRequest = { showGuideDialog = false },
+            title = {
+                Text(
+                    text = "Panduan Penggunaan",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = TextHead
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 10.dp)
+                ) {
+                    Text(
+                        text = "1. Kelola Arsip:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = GreenPrimary
+                    )
+                    Text(
+                        text = "Gunakan tab 'Arsip' untuk memantau data kearsipan. Filter berdasarkan modul atau tahun arsip.",
+                        fontSize = 12.sp,
+                        color = TextBody
+                    )
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
+
+                    Text(
+                        text = "2. Usul Pemusnahan:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = GreenPrimary
+                    )
+                    Text(
+                        text = "Masuk ke menu 'Usul Musnah' -> Klik tombol '[+] Buat Berkas' untuk mengajukan penghapusan berkas arsip yang telah melewati jangka retensi.",
+                        fontSize = 12.sp,
+                        color = TextBody
+                    )
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
+
+                    Text(
+                        text = "3. Cetak Berita Acara:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = GreenPrimary
+                    )
+                    Text(
+                        text = "Saat berkas usulan disetujui (APPROVED), buat Berita Acara Pemusnahan di menu 'Berita Acara', tentukan penandatangan, lalu unduh dokumen PDF resmi beserta lampiran tabel arsip via Excel.",
+                        fontSize = 12.sp,
+                        color = TextBody
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showGuideDialog = false }) {
+                    Text("Tutup", color = GreenPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = CardWhite,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // Dialog Tentang Aplikasi
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = {
+                Text(
+                    text = "Tentang Aplikasi",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = TextHead
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(GreenLight, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "SA",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GreenPrimary
+                        )
+                    }
+                    Text(
+                        text = "SIARSIP",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = TextHead
+                    )
+                    Text(
+                        text = "v1.0.0",
+                        fontSize = 12.sp,
+                        color = TextHint
+                    )
+                    Text(
+                        text = "Sistem Informasi Arsip Usul Musnah\nBPKPAD Kabupaten Balangan",
+                        fontSize = 13.sp,
+                        color = TextBody,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        lineHeight = 18.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) {
+                    Text("Tutup", color = GreenPrimary, fontWeight = FontWeight.Bold)
                 }
             },
             containerColor = CardWhite,
@@ -113,160 +359,163 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             Spacer(Modifier.height(24.dp))
 
-            // ── Avatar dengan tombol edit ─────────────────────
-            Box {
-                Box(
+            // ── Kartu Identitas Pegawai (Header) ─────────────────
+            Card(
+                colors = CardDefaults.cardColors(containerColor = CardWhite),
+                border = BorderStroke(1.dp, BorderGray),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
-                        .size(112.dp)
-                        .clip(CircleShape)
-                        .background(GreenLight)
-                        .border(3.dp, CardWhite, CircleShape),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp, horizontal = 16.dp)
                 ) {
-                    if (user.avatarUrl != null) {
-                        // Kalau ada foto, pakai Coil/AsyncImage:
-                        // AsyncImage(model = user.avatarUrl, contentDescription = null,
-                        //     modifier = Modifier.fillMaxSize().clip(CircleShape),
-                        //     contentScale = ContentScale.Crop)
-                    } else {
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(CircleShape)
+                            .background(GreenLight)
+                            .border(3.dp, GreenPrimary, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
-                            Icons.Filled.Person,
+                            imageVector = Icons.Filled.Person,
                             contentDescription = null,
-                            tint     = GreenPrimary,
-                            modifier = Modifier.size(56.dp)
+                            tint = GreenPrimary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    Text(
+                        text = user.namaPegawai,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextHead,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Text(
+                        text = "NIP. ${user.nip}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextHint
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .background(GreenLight, RoundedCornerShape(99.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = user.jabatan,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GreenPrimary
                         )
                     }
                 }
-                // Edit button — pojok kanan bawah avatar
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(34.dp)
-                        .background(GreenPrimary, CircleShape)
-                        .border(2.dp, CardWhite, CircleShape)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication        = null,
-                            onClick           = onEditPhoto
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Filled.Edit,
-                        contentDescription = "Ubah foto",
-                        tint     = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
 
-            // ── Nama ──────────────────────────────────────────
+            // ── Section Keamanan Akun ─────────────────────────
             Text(
-                text       = user.nama,
-                fontSize   = 24.sp,
+                text = "Keamanan Akun",
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color      = TextHead
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            // ── Badge role + ID ───────────────────────────────
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment     = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .background(GreenLight, RoundedCornerShape(9999.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        user.role,
-                        fontSize   = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color      = GreenPrimary
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .background(BlueBg, RoundedCornerShape(9999.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        "ID: ${user.idPegawai}",
-                        fontSize   = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color      = BlueText
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(28.dp))
-
-            // ── Section title ─────────────────────────────────
-            Text(
-                "Account Settings",
-                fontSize   = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color      = TextHead,
-                modifier   = Modifier
+                color = TextHint,
+                modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp)
+                    .padding(bottom = 8.dp)
             )
 
-            // ── Menu items ─────────────────────────────────────
             ProfileMenuItem(
-                icon     = Icons.Filled.Person,
-                iconBg   = GreenLight,
-                iconTint = GreenPrimary,
-                title    = "Profile Settings",
-                subtitle = "Lorem Ipsum dot silor amet salwaliya",
-                onClick  = onProfileSettings
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            ProfileMenuItem(
-                icon     = Icons.Filled.History,
-                iconBg   = BlueBg,
+                icon = Icons.Filled.Lock,
+                iconBg = BlueBg,
                 iconTint = BlueText,
-                title    = "Activity History",
-                subtitle = "Lorem Ipsum dot silor amet salwaliya",
-                onClick  = onActivityHistory
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            ProfileMenuItem(
-                icon     = Icons.Filled.HelpOutline,
-                iconBg   = GreenLight,
-                iconTint = GreenPrimary,
-                title    = "Help & Support",
-                subtitle = "Lorem Ipsum dot silor amet salwaliya",
-                onClick  = onHelpSupport
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            ProfileMenuItem(
-                icon       = Icons.Filled.Logout,
-                iconBg     = DangerBg,
-                iconTint   = DangerText,
-                title      = "Logout",
-                subtitle   = "Keluar dari akun",
-                titleColor = DangerText,
-                onClick    = { showLogoutDialog = true }
+                title = "Ubah Kata Sandi",
+                subtitle = "Ganti kredensial akses akun Anda",
+                onClick = { showPasswordDialog = true }
             )
 
             Spacer(Modifier.height(20.dp))
+
+            // ── Section Bantuan & Informasi ───────────────────
+            Text(
+                text = "Bantuan & Informasi",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextHint,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+
+            ProfileMenuItem(
+                icon = Icons.AutoMirrored.Filled.HelpOutline,
+                iconBg = GreenLight,
+                iconTint = GreenPrimary,
+                title = "Panduan Penggunaan",
+                subtitle = "Cara penggunaan sistem pemusnahan arsip",
+                onClick = { showGuideDialog = true }
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            ProfileMenuItem(
+                icon = Icons.Filled.Info,
+                iconBg = BlueBg,
+                iconTint = BlueText,
+                title = "Tentang Aplikasi",
+                subtitle = "SIARSIP v1.0.0 - BPKPAD Kab. Balangan",
+                onClick = { showAboutDialog = true }
+            )
+
+            Spacer(Modifier.height(28.dp))
+
+            // ── Tombol Keluar (Logout) ─────────────────────────
+            Button(
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                shape = RoundedCornerShape(12.dp),
+                onClick = { showLogoutDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Logout,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                    Text(
+                        text = "Keluar dari Aplikasi",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
         }
     }
 }
@@ -286,32 +535,16 @@ private fun ProfileTopBar() {
                 Box(
                     modifier = Modifier
                         .size(28.dp)
-                        .background(Color.White, RoundedCornerShape(14.dp)),
+                        .background(GreenPrimary, RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("B", color = GreenPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("S", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
                 Text(
-                    "BPKPAD Balangan",
+                    "SIARSIP Balangan",
                     fontSize   = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color      = GreenPrimary
-                )
-            }
-        },
-        actions = {
-            Box(
-                modifier = Modifier
-                    .padding(end = 12.dp)
-                    .size(34.dp)
-                    .background(GreenLight, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Filled.Person,
-                    contentDescription = null,
-                    tint     = GreenPrimary,
-                    modifier = Modifier.size(18.dp)
                 )
             }
         },
@@ -354,7 +587,6 @@ private fun ProfileMenuItem(
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Icon box bulat
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -369,7 +601,6 @@ private fun ProfileMenuItem(
                 )
             }
 
-            // Text
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     title,
@@ -386,7 +617,6 @@ private fun ProfileMenuItem(
                 )
             }
 
-            // Chevron
             Icon(
                 Icons.Filled.ChevronRight,
                 contentDescription = null,
@@ -397,80 +627,16 @@ private fun ProfileMenuItem(
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Bottom Navigation Bar — TANPA FAB, "Profil" aktif
-// ─────────────────────────────────────────────────────────────
 @Composable
-private fun ProfileBottomBar(
-    onDashboard: () -> Unit,
-    onArsip: () -> Unit,
-    onAktivitas: () -> Unit
-) {
-    NavigationBar(
-        containerColor = CardWhite,
-        tonalElevation = 0.dp,
-        modifier = Modifier
-            .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-    ) {
-        NavigationBarItem(
-            selected = false,
-            onClick  = onDashboard,
-            icon     = { Icon(Icons.Filled.Home, contentDescription = null) },
-            label    = { Text("Beranda", fontSize = 10.sp) },
-            colors   = NavigationBarItemDefaults.colors(
-                unselectedIconColor = TextHint,
-                unselectedTextColor = TextHint
-            )
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick  = onArsip,
-            icon     = { Icon(Icons.Filled.Folder, contentDescription = null) },
-            label    = { Text("Arsip", fontSize = 10.sp) },
-            colors   = NavigationBarItemDefaults.colors(
-                unselectedIconColor = TextHint,
-                unselectedTextColor = TextHint
-            )
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick  = onAktivitas,
-            icon     = { Icon(Icons.Filled.History, contentDescription = null) },
-            label    = { Text("Aktivitas", fontSize = 10.sp) },
-            colors   = NavigationBarItemDefaults.colors(
-                unselectedIconColor = TextHint,
-                unselectedTextColor = TextHint
-            )
-        )
-        NavigationBarItem(
-            selected = true,
-            onClick  = {},
-            icon     = {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .background(GreenPrimary, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Filled.Person,
-                        contentDescription = null,
-                        tint     = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            },
-            label    = { Text("Profil", fontSize = 10.sp) },
-            colors   = NavigationBarItemDefaults.colors(
-                selectedIconColor   = GreenPrimary,
-                selectedTextColor   = GreenPrimary,
-                indicatorColor      = Color.Transparent,
-                unselectedIconColor = TextHint,
-                unselectedTextColor = TextHint
-            )
-        )
-    }
-}
+private fun arsipFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor      = GreenPrimary,
+    unfocusedBorderColor    = BorderGray,
+    focusedContainerColor   = CardWhite,
+    unfocusedContainerColor = CardWhite,
+    focusedTextColor        = TextHead,
+    unfocusedTextColor      = TextHead,
+    cursorColor             = GreenPrimary
+)
 
 // ─────────────────────────────────────────────────────────────
 //  Preview

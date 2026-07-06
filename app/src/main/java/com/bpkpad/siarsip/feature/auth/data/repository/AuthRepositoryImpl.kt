@@ -41,6 +41,19 @@ class AuthRepositoryImpl @Inject constructor(
             .apply()
     }
 
+    override suspend fun changePassword(username: String, oldPassword: String, newPassword: String): Result<Unit> {
+        val entity = userDao.findByUsername(username) ?: return Result.failure(Exception("Pengguna tidak ditemukan"))
+        if (entity.passwordHash != sha256(oldPassword)) {
+            return Result.failure(Exception("Kata sandi lama salah"))
+        }
+        val rowsAffected = userDao.updatePassword(username, sha256(newPassword))
+        return if (rowsAffected > 0) {
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("Gagal mengubah kata sandi"))
+        }
+    }
+
     private fun sha256(text: String): String {
         val bytes = java.security.MessageDigest.getInstance("SHA-256").digest(text.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }

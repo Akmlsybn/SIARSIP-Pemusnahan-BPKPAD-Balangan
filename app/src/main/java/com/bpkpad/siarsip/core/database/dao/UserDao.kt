@@ -17,4 +17,7 @@ interface UserDao {
 
     @Query("SELECT COUNT(*) FROM users")
     suspend fun countUsers(): Int
+
+    @Query("UPDATE users SET passwordHash = :newPasswordHash WHERE username = :username")
+    suspend fun updatePassword(username: String, newPasswordHash: String): Int
 }

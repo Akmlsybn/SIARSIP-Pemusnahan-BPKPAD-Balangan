@@ -9,4 +9,5 @@ interface AuthRepository {
     fun setLoggedInUser(username: String?)
     fun getLoggedInUser(): String?
     fun logout()
+    suspend fun changePassword(username: String, oldPassword: String, newPassword: String): Result<Unit>
 }
