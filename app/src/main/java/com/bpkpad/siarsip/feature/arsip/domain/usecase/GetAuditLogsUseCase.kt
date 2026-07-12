@@ -52,6 +52,9 @@ class GetAuditLogsUseCase @Inject constructor(
                     "PROPOSAL_CREATED", "CREATE_PROPOSAL" -> {
                         Pair("Berkas", "Berkas baru dibuat")
                     }
+                    "CANCEL_PROPOSAL" -> {
+                        Pair("Berkas", "Berkas dikembalikan untuk revisi")
+                    }
                     "UPDATE_PROPOSAL_STATUS" -> {
                         when (log.newStatus) {
                             "VERIFIED" -> Pair("Penilaian", "Tim Penilai menyetujui usul")

@@ -16,7 +16,8 @@ class LogRiwayatViewModel @Inject constructor(
 
     val uiState: StateFlow<ResultState<List<LogEntry>>> = getAuditLogsUseCase()
         .map { logs ->
-            ResultState.Success(logs) as ResultState<List<LogEntry>>
+            val filteredLogs = logs.filter { it.categoryName != "Sistem" }
+            ResultState.Success(filteredLogs) as ResultState<List<LogEntry>>
         }
         .onStart {
             emit(ResultState.Loading)

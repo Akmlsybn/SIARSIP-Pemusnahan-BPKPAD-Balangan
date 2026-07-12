@@ -27,7 +27,8 @@ data class TrackingBerkas(
     val sumber: String,
     val arsipCount: Int,
     val stages: List<TrackingStage>,
-    val proposalId: String
+    val proposalId: String,
+    val status: String
 ) {
     val currentStageIndex: Int
         get() = stages.indexOfFirst { it.status == StageStatus.ACTIVE }
@@ -194,7 +195,8 @@ class GetTrackingInfoUseCase @Inject constructor(
                     sumber = proposal.sumberModul,
                     arsipCount = proposal.archives.size,
                     stages = listOf(createdStage, proposedStage, verifiedStage, approvedStage, disposedStage),
-                    proposalId = proposal.id
+                    proposalId = proposal.id,
+                    status = proposal.status
                 )
             }
         }.distinctUntilChanged() // Distinct until changed flow optimization (Amendment 2)

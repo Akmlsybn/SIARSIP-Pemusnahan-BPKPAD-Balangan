@@ -88,13 +88,7 @@ fun DetailBeritaAcaraScreen(
         containerColor = BgDashboard,
         topBar = {
             DetailBATopBar(
-                onBack       = onBack,
-                onUnduhPdf   = {
-                    baItem?.let { ba ->
-                        baToExport = ba
-                        exportPdfLauncher.launch("Berita_Acara_Pemusnahan_${ba.nomor.replace("/", "_")}.pdf")
-                    }
-                }
+                onBack       = onBack
             )
         },
         bottomBar = {
@@ -221,8 +215,7 @@ fun DetailBeritaAcaraScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DetailBATopBar(
-    onBack: () -> Unit,
-    onUnduhPdf: () -> Unit
+    onBack: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -239,14 +232,6 @@ private fun DetailBATopBar(
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(Icons.Filled.ArrowBack, "Kembali", tint = Color.White)
-            }
-        },
-        actions = {
-            IconButton(onClick = onUnduhPdf) {
-                Icon(Icons.Filled.PictureAsPdf, "Unduh PDF", tint = Color.White)
-            }
-            IconButton(onClick = {}) {
-                Icon(Icons.Filled.Share, "Bagikan", tint = Color.White)
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenPrimary)

@@ -54,12 +54,14 @@ fun StatusTrackingScreen(
     val context = LocalContext.current
     val trackingState by viewModel.trackingList.collectAsState()
     val updateState by viewModel.updateState.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     val trackingList = (trackingState as? ResultState.Success)?.data ?: emptyList()
 
     var activeFilter   by remember { mutableStateOf("Semua") }
     var expandedNomor  by remember { mutableStateOf<String?>(null) }
     var showUpdateDialogFor by remember { mutableStateOf<TrackingBerkas?>(null) }
+    var showRevisionConfirmFor by remember { mutableStateOf<TrackingBerkas?>(null) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
@@ -77,10 +79,53 @@ fun StatusTrackingScreen(
             Toast.makeText(context, (updateState as ResultState.Error).exception.message ?: "Gagal mengubah status berkas", Toast.LENGTH_LONG).show()
             viewModel.resetUpdateState()
         }
-        if (updateState is ResultState.Success && showUpdateDialogFor != null) {
-            showUpdateDialogFor = null
+        if (updateState is ResultState.Success) {
+            if (showUpdateDialogFor != null) {
+                showUpdateDialogFor = null
+            }
             viewModel.resetUpdateState()
         }
+    }
+
+    if (showRevisionConfirmFor != null) {
+        AlertDialog(
+            onDismissRequest = { showRevisionConfirmFor = null },
+            title = {
+                Text(
+                    text = "Kembalikan untuk Revisi",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = TextHead
+                )
+            },
+            text = {
+                Text(
+                    text = "Apakah Anda yakin ingin mengembalikan berkas usul musnah ${showRevisionConfirmFor?.nomor} ke tahap awal untuk direvisi / ditelusuri ulang?",
+                    fontSize = 14.sp,
+                    color = TextBody
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val berkas = showRevisionConfirmFor
+                        if (berkas != null) {
+                            viewModel.deleteProposalForRevision(proposalId = berkas.proposalId)
+                        }
+                        showRevisionConfirmFor = null
+                    }
+                ) {
+                    Text(text = "Ya, Revisi", color = DangerText, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRevisionConfirmFor = null }) {
+                    Text(text = "Batal", color = TextHint)
+                }
+            },
+            containerColor = CardWhite,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 
     // ── Drawer wrapper ────────────────────────────────────────
@@ -181,6 +226,42 @@ fun StatusTrackingScreen(
                                         )
                                     }
                                 }
+ 
+                                // ── Search Bar ────────────────────────────────
+                                item {
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { viewModel.setSearchQuery(it) },
+                                        placeholder = {
+                                            Text("Cari nomor atau perihal berkas...",
+                                                fontSize = 13.sp, color = TextHint)
+                                        },
+                                        leadingIcon = {
+                                            Icon(Icons.Filled.Search, null,
+                                                tint = TextHint, modifier = Modifier.size(20.dp))
+                                        },
+                                        trailingIcon = if (searchQuery.isNotEmpty()) {
+                                            {
+                                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                                    Icon(Icons.Filled.Close, null,
+                                                        tint = TextHint, modifier = Modifier.size(18.dp))
+                                                }
+                                            }
+                                        } else null,
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = GreenPrimary,
+                                            unfocusedBorderColor = BorderGray,
+                                            focusedContainerColor = CardWhite,
+                                            unfocusedContainerColor = CardWhite,
+                                            focusedTextColor = TextHead,
+                                            unfocusedTextColor = TextHead,
+                                            cursorColor = GreenPrimary
+                                        ),
+                                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                                    )
+                                }
 
                                 // ── Filter chips ──────────────────────────────
                                 item {
@@ -207,7 +288,8 @@ fun StatusTrackingScreen(
                                         onToggle       = {
                                             expandedNomor = if (isExpanded) null else berkas.nomor
                                         },
-                                        onCatatBalasan = { showUpdateDialogFor = berkas }
+                                        onCatatBalasan = { showUpdateDialogFor = berkas },
+                                        onRevisi       = { showRevisionConfirmFor = berkas }
                                     )
                                 }
                             }
@@ -425,11 +507,6 @@ private fun TrackingTopBar(onMenuClick: () -> Unit) {
                 Icon(Icons.Filled.Menu, "Buka menu", tint = Color.White)
             }
         },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Filled.Search, "Cari", tint = Color.White)
-            }
-        },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenPrimary)
     )
 }
@@ -509,7 +586,8 @@ private fun TrackingCard(
     berkas: TrackingBerkas,
     isExpanded: Boolean,
     onToggle: () -> Unit,
-    onCatatBalasan: () -> Unit
+    onCatatBalasan: () -> Unit,
+    onRevisi: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -687,24 +765,70 @@ private fun TrackingCard(
                         )
                     }
 
-                    // Tombol catat balasan
+                    // Tombol catat balasan / revisi
                     if (berkas.stages.any { it.status == StageStatus.ACTIVE }) {
                         Spacer(Modifier.height(8.dp))
-                        Button(
-                            onClick  = onCatatBalasan,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp),
-                            shape  = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = GreenPrimary,
-                                contentColor   = Color.White
-                            )
-                        ) {
-                            Icon(Icons.Filled.Edit, null, modifier = Modifier.size(15.dp))
-                            Spacer(Modifier.width(7.dp))
-                            Text("Catat Balasan / Update Status",
-                                fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        if (berkas.status == "VERIFIED") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = onRevisi,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(44.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    )
+                                ) {
+                                    Icon(Icons.Filled.Undo, null, modifier = Modifier.size(15.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        "Revisi / Telusuri Ulang",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Button(
+                                    onClick = onCatatBalasan,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(44.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = GreenPrimary,
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Icon(Icons.Filled.Check, null, modifier = Modifier.size(15.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        "Setujui / Lanjutkan",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick  = onCatatBalasan,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp),
+                                shape  = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GreenPrimary,
+                                    contentColor   = Color.White
+                                )
+                            ) {
+                                Icon(Icons.Filled.Edit, null, modifier = Modifier.size(15.dp))
+                                Spacer(Modifier.width(7.dp))
+                                Text("Catat Balasan / Update Status",
+                                    fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }

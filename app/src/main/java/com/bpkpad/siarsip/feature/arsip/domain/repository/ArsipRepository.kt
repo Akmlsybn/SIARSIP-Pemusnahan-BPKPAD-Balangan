@@ -27,4 +27,5 @@ interface ArsipRepository {
     )
     suspend fun insertBeritaAcara(beritaAcara: BeritaAcara, archiveIds: List<String>, signatories: List<Penandatangan>)
     suspend fun insertAuditLog(log: AuditLog)
+    suspend fun deleteProposal(proposalId: String, auditLogs: List<AuditLog>)
 }

@@ -27,4 +27,7 @@ interface BerkasUsulMusnahDao {
 
     @Query("UPDATE proposals SET jenisPersetujuanAkhir = :jenis, nomorPersetujuanAkhir = :nomor, perihalPersetujuanAkhir = :perihal WHERE id = :id")
     suspend fun updateApprovalMetadata(id: String, jenis: String?, nomor: String?, perihal: String?)
+
+    @Query("DELETE FROM proposals WHERE id = :id")
+    suspend fun deleteProposal(id: String)
 }

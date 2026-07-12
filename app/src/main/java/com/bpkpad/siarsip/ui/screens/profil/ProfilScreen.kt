@@ -347,7 +347,7 @@ fun ProfileScreen(
 
     Scaffold(
         containerColor = BgDashboard,
-        topBar = { ProfileTopBar() },
+        topBar = { ProfileTopBar(onBack = onBack) },
         bottomBar = {
             PemusnahanBottomBar(
                 currentRoute = DrawerRoutes.PROFIL,
@@ -525,7 +525,7 @@ fun ProfileScreen(
 // ─────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileTopBar() {
+private fun ProfileTopBar(onBack: () -> Unit) {
     TopAppBar(
         title = {
             Row(
@@ -545,6 +545,15 @@ private fun ProfileTopBar() {
                     fontSize   = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color      = GreenPrimary
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Kembali",
+                    tint = GreenPrimary
                 )
             }
         },

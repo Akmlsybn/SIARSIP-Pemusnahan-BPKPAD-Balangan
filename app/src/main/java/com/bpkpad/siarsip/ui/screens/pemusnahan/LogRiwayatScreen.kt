@@ -72,7 +72,7 @@ fun LogRiwayatScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
 
-    val filters = listOf("Semua", "Berkas", "Penilaian", "Pemusnahan", "Berita Acara", "Sistem")
+    val filters = listOf("Semua", "Berkas", "Penilaian", "Pemusnahan", "Berita Acara")
 
     val uiState by viewModel.uiState.collectAsState()
 
@@ -314,11 +314,6 @@ private fun LogTopBar(onMenuClick: () -> Unit) {
         navigationIcon = {
             IconButton(onClick = onMenuClick) {
                 Icon(Icons.Filled.Menu, "Buka menu", tint = Color.White)
-            }
-        },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Filled.FileDownload, "Ekspor log", tint = Color.White)
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenPrimary)

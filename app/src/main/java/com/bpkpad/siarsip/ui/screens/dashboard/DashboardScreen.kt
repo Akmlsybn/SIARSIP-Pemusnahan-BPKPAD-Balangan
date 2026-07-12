@@ -117,14 +117,6 @@ private fun DashboardTopBar(onMenuClick: () -> Unit) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
             }
         },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Filled.Notifications, contentDescription = "Notifikasi", tint = Color.White)
-            }
-            IconButton(onClick = {}) {
-                Icon(Icons.Filled.AccountCircle, contentDescription = "Profil", tint = Color.White)
-            }
-        },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = GreenPrimary
         )

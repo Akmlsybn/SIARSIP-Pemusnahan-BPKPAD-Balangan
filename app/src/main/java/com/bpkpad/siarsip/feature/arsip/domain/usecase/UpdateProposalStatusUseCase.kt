@@ -28,7 +28,7 @@ class UpdateProposalStatusUseCase @Inject constructor(
             // Validate State Machine (Rule 5)
             val isValidTransition = when (currentStatus) {
                 "PROPOSED" -> newStatus == "VERIFIED"
-                "VERIFIED" -> newStatus == "APPROVED"
+                "VERIFIED" -> newStatus == "APPROVED" || newStatus == "PROPOSED"
                 // APPROVED -> DISPOSED is handled only via CreateBeritaAcaraUseCase
                 else -> false
             }
@@ -43,6 +43,7 @@ class UpdateProposalStatusUseCase @Inject constructor(
             val customNotes = when (newStatus) {
                 "VERIFIED" -> "Disetujui Tim Penilai berdasarkan Surat Pertimbangan No: $suratPertimbanganNomor ($suratPertimbanganPerihal)"
                 "APPROVED" -> "Disetujui oleh $jenisPersetujuanAkhir berdasarkan Surat No: $nomorPersetujuanAkhir ($perihalPersetujuanAkhir)"
+                "PROPOSED" -> "Berkas dikembalikan ke tahap awal untuk dilakukan revisi/penelusuran ulang."
                 else -> "Mengubah status berkas usul musnah ${proposal.nomorBerkas} menjadi $newStatus"
             }
 

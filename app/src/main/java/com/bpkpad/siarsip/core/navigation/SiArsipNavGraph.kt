@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.bpkpad.siarsip.feature.auth.presentation.LoginViewModel
 import com.bpkpad.siarsip.feature.auth.presentation.LoginUiState
 import com.bpkpad.siarsip.ui.screens.auth.LoginScreen
@@ -43,7 +44,7 @@ private fun NavHostController.navigateToRoute(route: String, onLogout: () -> Uni
             }
         }
         else -> navigate(route) {
-            popUpTo(Screen.Dashboard.route) {
+            popUpTo(graph.findStartDestination().id) {
                 saveState = true
             }
             launchSingleTop = true

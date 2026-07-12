@@ -62,6 +62,7 @@ fun DaftarUsulMusnahScreen(
     var activeFilter   by remember { mutableStateOf("Semua") }
     var activeYear     by remember { mutableStateOf("Semua") }
     var expandedItemId by remember { mutableStateOf<String?>(null) }
+    var showFilters    by remember { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
@@ -151,7 +152,9 @@ fun DaftarUsulMusnahScreen(
             },
             topBar = {
                 DaftarTopBar(
-                    onMenuClick = { scope.launch { drawerState.open() } }
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    showFilters = showFilters,
+                    onToggleFilters = { showFilters = !showFilters }
                 )
             },
             floatingActionButton = {
@@ -190,58 +193,60 @@ fun DaftarUsulMusnahScreen(
                     Spacer(Modifier.height(10.dp))
                 }
 
-                // Filter modul
-                item {
-                    Column {
-                        Text(
-                            "MODUL",
-                            fontSize      = 9.sp,
-                            fontWeight    = FontWeight.Bold,
-                            color         = TextHint,
-                            letterSpacing = 0.7.sp,
-                            modifier      = Modifier.padding(bottom = 6.dp, start = 2.dp)
-                        )
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                            items(filters) { filter ->
-                                FilterChipItem(
-                                    label    = filter,
-                                    isActive = activeFilter == filter,
-                                    onClick  = {
-                                        activeFilter   = filter
-                                        expandedItemId = null
-                                    }
-                                )
+                if (showFilters) {
+                    // Filter modul
+                    item {
+                        Column {
+                            Text(
+                                "MODUL",
+                                fontSize      = 9.sp,
+                                fontWeight    = FontWeight.Bold,
+                                color         = TextHint,
+                                letterSpacing = 0.7.sp,
+                                modifier      = Modifier.padding(bottom = 6.dp, start = 2.dp)
+                            )
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                items(filters) { filter ->
+                                    FilterChipItem(
+                                        label    = filter,
+                                        isActive = activeFilter == filter,
+                                        onClick  = {
+                                            activeFilter   = filter
+                                            expandedItemId = null
+                                        }
+                                    )
+                                }
                             }
                         }
+                        Spacer(Modifier.height(10.dp))
                     }
-                    Spacer(Modifier.height(10.dp))
-                }
 
-                // Filter tahun
-                item {
-                    Column {
-                        Text(
-                            "TAHUN",
-                            fontSize      = 9.sp,
-                            fontWeight    = FontWeight.Bold,
-                            color         = TextHint,
-                            letterSpacing = 0.7.sp,
-                            modifier      = Modifier.padding(bottom = 6.dp, start = 2.dp)
-                        )
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                            items(years) { year ->
-                                FilterChipItem(
-                                    label    = year,
-                                    isActive = activeYear == year,
-                                    onClick  = {
-                                        activeYear     = year
-                                        expandedItemId = null
-                                    }
-                                )
+                    // Filter tahun
+                    item {
+                        Column {
+                            Text(
+                                "TAHUN",
+                                fontSize      = 9.sp,
+                                fontWeight    = FontWeight.Bold,
+                                color         = TextHint,
+                                letterSpacing = 0.7.sp,
+                                modifier      = Modifier.padding(bottom = 6.dp, start = 2.dp)
+                            )
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                items(years) { year ->
+                                    FilterChipItem(
+                                        label    = year,
+                                        isActive = activeYear == year,
+                                        onClick  = {
+                                            activeYear     = year
+                                            expandedItemId = null
+                                        }
+                                    )
+                                }
                             }
                         }
+                        Spacer(Modifier.height(10.dp))
                     }
-                    Spacer(Modifier.height(10.dp))
                 }
 
                 // ── Stat chips ────────────────────────────────
@@ -399,7 +404,11 @@ fun DaftarUsulMusnahScreen(
 // ─────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DaftarTopBar(onMenuClick: () -> Unit) {
+private fun DaftarTopBar(
+    onMenuClick: () -> Unit,
+    showFilters: Boolean,
+    onToggleFilters: () -> Unit
+) {
     TopAppBar(
         title = {
             Column {
@@ -426,11 +435,11 @@ private fun DaftarTopBar(onMenuClick: () -> Unit) {
             }
         },
         actions = {
-            IconButton(onClick = {}) {
+            IconButton(onClick = onToggleFilters) {
                 Icon(
                     Icons.Filled.FilterList,
                     contentDescription = "Filter",
-                    tint = Color.White
+                    tint = if (showFilters) GreenLight else Color.White
                 )
             }
         },

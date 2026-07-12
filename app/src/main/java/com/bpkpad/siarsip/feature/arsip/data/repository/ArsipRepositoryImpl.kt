@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -146,5 +147,19 @@ class ArsipRepositoryImpl @Inject constructor(
 
     override suspend fun insertAuditLog(log: AuditLog) = withContext(Dispatchers.IO) {
         auditLogDao.insertAuditLog(log.toEntity())
+    }
+
+    override suspend fun deleteProposal(proposalId: String, auditLogs: List<AuditLog>) = withContext(Dispatchers.IO) {
+        appDatabase.withTransaction {
+            val archives = arsipDao.getArchivesByProposal(proposalId).first()
+            val archiveIds = archives.map { it.id }
+            if (archiveIds.isNotEmpty()) {
+                arsipDao.updateArchivesProposal(archiveIds, "AVAILABLE", null)
+            }
+            berkasUsulMusnahDao.deleteProposal(proposalId)
+            for (log in auditLogs) {
+                auditLogDao.insertAuditLog(log.toEntity())
+            }
+        }
     }
 }

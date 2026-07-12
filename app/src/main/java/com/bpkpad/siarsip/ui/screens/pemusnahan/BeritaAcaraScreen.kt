@@ -595,11 +595,6 @@ private fun BATopBar(onMenuClick: () -> Unit) {
                 Icon(Icons.Filled.Menu, "Buka menu", tint = Color.White)
             }
         },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Filled.FileDownload, "Ekspor semua", tint = Color.White)
-            }
-        },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenPrimary)
     )
 }
