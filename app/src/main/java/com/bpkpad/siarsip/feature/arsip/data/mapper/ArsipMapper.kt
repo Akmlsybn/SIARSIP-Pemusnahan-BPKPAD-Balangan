@@ -46,7 +46,11 @@ fun BerkasUsulMusnahEntity.toDomain(archives: List<Arsip> = emptyList()): Berkas
     nomorBerkas = nomorBerkas,
     tanggal = tanggal,
     unitPengolah = unitPengolah,
-    sumberModul = sumberModul,
+    sumberModul = if (archives.isNotEmpty()) {
+        archives.map { it.sumber }.distinct().sorted().joinToString(", ")
+    } else {
+        sumberModul
+    },
     perihal = perihal,
     status = status,
     createdAt = createdAt,

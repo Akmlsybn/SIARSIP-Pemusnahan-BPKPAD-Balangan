@@ -1,5 +1,6 @@
 package com.bpkpad.siarsip.ui.screens.pemusnahan
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -22,12 +23,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bpkpad.siarsip.core.utils.ResultState
 import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
+import com.bpkpad.siarsip.feature.arsip.presentation.DetailBerkasUsulMusnahViewModel
 import com.bpkpad.siarsip.ui.theme.*
 
 // ─────────────────────────────────────────────────────────────
@@ -39,7 +44,7 @@ data class BerkasDetail(
     val sumberModul: String,
     val unitPengolah: String,
     val perihal: String,
-    val status: String,      // "Draft", "Diajukan", "Menunggu", "Disetujui", "Selesai"
+    val status: String,      // "Draft", "Penilaian", "Disetujui", "Selesai"
     val tahapan: String,     // mis. "Tahap 3: Pengiriman ke Bupati"
     val arsipList: List<Arsip>
 )
@@ -69,10 +74,9 @@ val dummyBerkasDetail = BerkasDetail(
     tanggal      = "12 Mei 2025",
     sumberModul  = "Keuangan",
     unitPengolah = "BPKPAD Balangan",
-    perihal      = "Pemusnahan arsip keuangan tahun 2016 yang telah " +
-            "habis masa retensinya berdasarkan Jadwal Retensi Arsip (JRA)",
-    status       = "Menunggu",
-    tahapan      = "Tahap 3 dari 5 — Pengiriman ke Bupati",
+    perihal      = "Pemusnahan arsip keuangan tahun 2016 yang telah habis masa retensinya berdasarkan Jadwal Retensi Arsip (JRA)",
+    status       = "Draft",
+    tahapan      = "Tahap 1 dari 5 — Pembuatan Usulan",
     arsipList    = dummyArsipListLocal
 )
 
@@ -81,123 +85,203 @@ val dummyBerkasDetail = BerkasDetail(
 // ─────────────────────────────────────────────────────────────
 @Composable
 fun DetailBerkasUsulMusnahScreen(
-    berkas: BerkasDetail = dummyBerkasDetail,
     onBack: () -> Unit = {},
     onExportPdf: () -> Unit = {},
-    onLihatTracking: () -> Unit = {}
+    onLihatTracking: () -> Unit = {},
+    viewModel: DetailBerkasUsulMusnahViewModel = hiltViewModel()
 ) {
+    val proposalState by viewModel.proposalState.collectAsState()
+    val removeState by viewModel.removeState.collectAsState()
+    val context = LocalContext.current
+
     var expandedItemId by remember { mutableStateOf<String?>(null) }
+    var isEditMode by remember { mutableStateOf(false) }
 
-    Scaffold(
-        containerColor = BgDashboard,
-        topBar = {
-            DetailBerkasTopBar(
-                onBack       = onBack,
-                onExportPdf  = onExportPdf
-            )
-        },
-        bottomBar = {
-            DetailBerkasBottomBar(
-                arsipCount       = berkas.arsipList.size,
-                onLihatTracking  = onLihatTracking
-            )
+    LaunchedEffect(removeState) {
+        if (removeState is ResultState.Error) {
+            Toast.makeText(context, (removeState as ResultState.Error).exception.message ?: "Gagal melepaskan arsip", Toast.LENGTH_LONG).show()
+            viewModel.resetRemoveState()
         }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(
-                start  = 16.dp,
-                end    = 16.dp,
-                top    = 14.dp,
-                bottom = 8.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
+    }
 
-            // ── Berkas info card ──────────────────────────────
-            item {
-                BerkasInfoCard(berkas = berkas)
+    when (val state = proposalState) {
+        is ResultState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = GreenPrimary)
             }
-
-            // ── Section header: Daftar Arsip ──────────────────
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(GreenLight, RoundedCornerShape(11.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Filled.FolderOpen,
-                                null,
-                                tint     = GreenPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Column {
-                            Text("Daftar arsip",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextHead)
-                            Text("${berkas.arsipList.size} arsip dalam berkas ini",
-                                fontSize = 11.sp, color = TextBody,
-                                modifier = Modifier.padding(top = 2.dp))
-                        }
+        }
+        is ResultState.Error -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Gagal memuat detail berkas: ${state.exception.message}", color = DangerText)
+            }
+        }
+        is ResultState.Success -> {
+            val proposal = state.data
+            if (proposal == null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Berkas tidak ditemukan", color = DangerText)
+                }
+            } else {
+                val berkasDetail = remember(proposal) {
+                    val statusText = when (proposal.status) {
+                        "PROPOSED" -> "Draft"
+                        "VERIFIED" -> "Penilaian"
+                        "APPROVED" -> "Disetujui"
+                        "DISPOSED" -> "Selesai"
+                        else -> proposal.status
                     }
-                    // Total badge
-                    Box(
-                        modifier = Modifier
-                            .background(GreenPrimary, RoundedCornerShape(9999.dp))
-                            .padding(horizontal = 11.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            "${berkas.arsipList.size}",
-                            fontSize   = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color      = Color.White
+                    val tahapanText = when (proposal.status) {
+                        "PROPOSED" -> "Tahap 1 dari 5 — Pembuatan Usulan"
+                        "VERIFIED" -> "Tahap 3 dari 5 — Menunggu Persetujuan Kepala Daerah"
+                        "APPROVED" -> "Tahap 4 dari 5 — Menunggu Eksekusi Pemusnahan"
+                        "DISPOSED" -> "Tahap 5 dari 5 — Pemusnahan & Berita Acara"
+                        else -> "Status: ${proposal.status}"
+                    }
+                    BerkasDetail(
+                        nomor = proposal.nomorBerkas,
+                        tanggal = proposal.tanggal,
+                        sumberModul = proposal.sumberModul,
+                        unitPengolah = proposal.unitPengolah,
+                        perihal = proposal.perihal,
+                        status = statusText,
+                        tahapan = tahapanText,
+                        arsipList = proposal.archives
+                    )
+                }
+
+                // Turn off edit mode if status changes away from PROPOSED
+                if (proposal.status != "PROPOSED") {
+                    isEditMode = false
+                }
+
+                Scaffold(
+                    containerColor = BgDashboard,
+                    topBar = {
+                        DetailBerkasTopBar(
+                            onBack       = onBack
+                        )
+                    },
+                    bottomBar = {
+                        DetailBerkasBottomBar(
+                            showEditButton  = proposal.status == "PROPOSED",
+                            isEditMode      = isEditMode,
+                            onEditModeToggle = { isEditMode = it }
                         )
                     }
-                }
-            }
+                ) { padding ->
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentPadding = PaddingValues(
+                            start  = 16.dp,
+                            end    = 16.dp,
+                            top    = 14.dp,
+                            bottom = 8.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
 
-            // ── Daftar arsip card ─────────────────────────────
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape    = RoundedCornerShape(16.dp),
-                    colors   = CardDefaults.cardColors(containerColor = CardWhite),
-                    border   = BorderStroke(1.dp, BorderGray)
-                ) {
-                    Column {
-                        berkas.arsipList.forEachIndexed { index, item ->
-                            val isExpanded = expandedItemId == item.id
-                            val isLast     = index == berkas.arsipList.lastIndex
-                            DetailArsipRow(
-                                number     = index + 1,
-                                item       = item,
-                                isExpanded = isExpanded,
-                                isLast     = isLast,
-                                onEyeClick = {
-                                    expandedItemId = if (isExpanded) null else item.id
-                                }
-                            )
+                        // ── Berkas info card ──────────────────────────────
+                        item {
+                            BerkasInfoCard(berkas = berkasDetail)
                         }
+
+                        // ── Section header: Daftar Arsip ──────────────────
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment     = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(GreenLight, RoundedCornerShape(11.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.FolderOpen,
+                                            null,
+                                            tint     = GreenPrimary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text("Daftar arsip",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextHead)
+                                        Text("${berkasDetail.arsipList.size} arsip dalam berkas ini",
+                                            fontSize = 11.sp, color = TextBody,
+                                            modifier = Modifier.padding(top = 2.dp))
+                                    }
+                                }
+                                // Total badge
+                                Box(
+                                    modifier = Modifier
+                                        .background(GreenPrimary, RoundedCornerShape(9999.dp))
+                                        .padding(horizontal = 11.dp, vertical = 5.dp)
+                                ) {
+                                    Text(
+                                        "${berkasDetail.arsipList.size}",
+                                        fontSize   = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color      = Color.White
+                                    )
+                                }
+                            }
+                        }
+
+                        // ── Daftar arsip card ─────────────────────────────
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape    = RoundedCornerShape(16.dp),
+                                colors   = CardDefaults.cardColors(containerColor = CardWhite),
+                                border   = BorderStroke(1.dp, BorderGray)
+                            ) {
+                                Column {
+                                    if (berkasDetail.arsipList.isEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(24.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("Belum ada arsip di dalam usulan ini", color = TextHint, fontSize = 13.sp)
+                                        }
+                                    } else {
+                                        berkasDetail.arsipList.forEachIndexed { index, item ->
+                                            val isExpanded = expandedItemId == item.id
+                                            val isLast     = index == berkasDetail.arsipList.lastIndex
+                                            DetailArsipRow(
+                                                number     = index + 1,
+                                                item       = item,
+                                                isExpanded = isExpanded,
+                                                isLast     = isLast,
+                                                onEyeClick = {
+                                                    expandedItemId = if (isExpanded) null else item.id
+                                                },
+                                                isEditMode = isEditMode,
+                                                onRemoveClick = {
+                                                    viewModel.removeArchive(proposalId = proposal.id, archiveId = item.id)
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        item { Spacer(Modifier.height(8.dp)) }
                     }
                 }
             }
-
-            item { Spacer(Modifier.height(8.dp)) }
         }
     }
 }
@@ -208,8 +292,7 @@ fun DetailBerkasUsulMusnahScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DetailBerkasTopBar(
-    onBack: () -> Unit,
-    onExportPdf: () -> Unit
+    onBack: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -236,15 +319,6 @@ private fun DetailBerkasTopBar(
                 )
             }
         },
-        actions = {
-            IconButton(onClick = onExportPdf) {
-                Icon(
-                    Icons.Filled.PictureAsPdf,
-                    contentDescription = "Export PDF",
-                    tint = Color.White
-                )
-            }
-        },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = GreenPrimary
         )
@@ -252,13 +326,16 @@ private fun DetailBerkasTopBar(
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Bottom Bar — tombol Lihat Tracking
+//  Bottom Bar — tombol Aksi Edit / Lihat Tracking
 // ─────────────────────────────────────────────────────────────
 @Composable
 private fun DetailBerkasBottomBar(
-    arsipCount: Int,
-    onLihatTracking: () -> Unit
+    showEditButton: Boolean,
+    isEditMode: Boolean,
+    onEditModeToggle: (Boolean) -> Unit
 ) {
+    if (!showEditButton) return
+
     Surface(
         modifier        = Modifier.fillMaxWidth(),
         color           = CardWhite,
@@ -271,20 +348,25 @@ private fun DetailBerkasBottomBar(
                 .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 18.dp)
         ) {
             Button(
-                onClick  = onLihatTracking,
+                onClick  = { onEditModeToggle(!isEditMode) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 shape  = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = GreenPrimary,
-                    contentColor   = Color.White
-                )
+                    containerColor = if (isEditMode) GreenPrimary else CardWhite,
+                    contentColor   = if (isEditMode) Color.White else GreenPrimary
+                ),
+                border = if (isEditMode) null else BorderStroke(1.5.dp, GreenPrimary)
             ) {
-                Icon(Icons.Filled.Timeline, null, modifier = Modifier.size(18.dp))
+                Icon(
+                    imageVector = if (isEditMode) Icons.Filled.Check else Icons.Filled.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Lihat Status & Tracking",
+                    if (isEditMode) "Selesai Edit" else "Edit Usulan",
                     fontSize   = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -304,199 +386,117 @@ private fun BerkasInfoCard(berkas: BerkasDetail) {
         colors   = CardDefaults.cardColors(containerColor = CardWhite),
         border   = BorderStroke(1.dp, BorderGray)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-
-            // Hero header — nomor + status
+        Column(
+            modifier              = Modifier.padding(16.dp),
+            verticalArrangement   = Arrangement.spacedBy(12.dp)
+        ) {
+            // Row 1: Nomor Berkas & Status
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(GreenPrimary)
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.Top
+                verticalAlignment     = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column {
                     Text(
                         "NOMOR BERKAS",
                         fontSize      = 9.sp,
                         fontWeight    = FontWeight.Bold,
-                        color         = Color.White.copy(alpha = 0.7f),
-                        letterSpacing = 0.8.sp
+                        color         = TextHint,
+                        letterSpacing = 0.7.sp
                     )
                     Text(
                         berkas.nomor,
-                        fontSize   = 20.sp,
+                        fontSize   = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color      = Color.White,
-                        modifier   = Modifier.padding(top = 3.dp)
+                        color      = GreenPrimary,
+                        modifier   = Modifier.padding(top = 2.dp)
                     )
                 }
-                BerkasStatusBadge(status = berkas.status)
+                StatusBadge(berkas.status)
             }
 
-            // Body
-            Column(modifier = Modifier.padding(16.dp)) {
+            HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
 
-                // Tahapan progress
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(AmberBg, RoundedCornerShape(10.dp))
-                        .border(1.dp, Color(0xFFFDE68A), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(9.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.HourglassEmpty,
-                        null,
-                        tint     = AmberText,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Column {
-                        Text(
-                            "Sedang Diproses",
-                            fontSize   = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color      = AmberText
-                        )
-                        Text(
-                            berkas.tahapan,
-                            fontSize = 11.sp,
-                            color    = TextBody,
-                            modifier = Modifier.padding(top = 1.dp)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(14.dp))
-
-                // Info grid — 2 kolom
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    BerkasInfoField(
-                        icon     = Icons.Filled.Event,
-                        label    = "Tanggal Dibuat",
-                        value    = berkas.tanggal,
-                        modifier = Modifier.weight(1f)
-                    )
-                    BerkasInfoField(
-                        icon     = Icons.Filled.Category,
-                        label    = "Sumber Modul",
-                        value    = berkas.sumberModul,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                BerkasInfoField(
-                    icon  = Icons.Filled.Domain,
-                    label = "Unit Pengolah",
-                    value = berkas.unitPengolah
+            // Row 2: Perihal
+            Column {
+                Text(
+                    "PERIHAL",
+                    fontSize      = 9.sp,
+                    fontWeight    = FontWeight.Bold,
+                    color         = TextHint,
+                    letterSpacing = 0.7.sp
                 )
+                Text(
+                    berkas.perihal,
+                    fontSize   = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color      = TextHead,
+                    lineHeight = 17.sp,
+                    modifier   = Modifier.padding(top = 2.dp)
+                )
+            }
 
-                Spacer(Modifier.height(12.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
 
-                // Perihal — full row
-                Column {
-                    Row(
-                        verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier              = Modifier.padding(bottom = 5.dp)
-                    ) {
-                        Icon(
-                            Icons.Filled.Notes,
-                            null,
-                            tint     = TextHint,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Text(
-                            "PERIHAL",
-                            fontSize      = 9.sp,
-                            fontWeight    = FontWeight.Bold,
-                            color         = TextHint,
-                            letterSpacing = 0.7.sp
-                        )
-                    }
+            // Row 3: Tanggal & Unit & Sumber
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                DetailField(
+                    label    = "TANGGAL BERKAS",
+                    value    = berkas.tanggal,
+                    modifier = Modifier.weight(1f)
+                )
+                DetailField(
+                    label    = "UNIT PENGOLAH",
+                    value    = berkas.unitPengolah,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier              = Modifier.fillMaxWidth()
+            ) {
+                DetailField(
+                    label    = "SUMBER MODUL",
+                    value    = berkas.sumberModul,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
+
+            // Row 4: Tahapan progress
+            Column {
+                Text(
+                    "TAHAPAN PROSES",
+                    fontSize      = 9.sp,
+                    fontWeight    = FontWeight.Bold,
+                    color         = TextHint,
+                    letterSpacing = 0.7.sp
+                )
+                Row(
+                    modifier              = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(GreenPrimary, CircleShape)
+                    )
                     Text(
-                        berkas.perihal,
+                        berkas.tahapan,
                         fontSize   = 12.sp,
-                        color      = TextBody,
-                        lineHeight = 17.sp
+                        fontWeight = FontWeight.SemiBold,
+                        color      = TextHead
                     )
                 }
             }
         }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  Status Badge (untuk header berkas)
-// ─────────────────────────────────────────────────────────────
-@Composable
-private fun BerkasStatusBadge(status: String) {
-    val (bg, textColor, icon) = when (status) {
-        "Draft"     -> Triple(Color.White.copy(alpha = 0.15f), Color.White, Icons.Filled.EditNote)
-        "Diajukan"  -> Triple(BlueBg, BlueText, Icons.Filled.Send)
-        "Menunggu"  -> Triple(AmberBg, AmberText, Icons.Filled.HourglassEmpty)
-        "Disetujui" -> Triple(GreenLight, GreenPrimary, Icons.Filled.CheckCircle)
-        "Selesai"   -> Triple(GreenLight, GreenPrimary, Icons.Filled.TaskAlt)
-        else        -> Triple(Color.White.copy(alpha = 0.15f), Color.White, Icons.Filled.Info)
-    }
-
-    Row(
-        modifier = Modifier
-            .background(bg, RoundedCornerShape(9999.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment     = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-        Icon(icon, null, tint = textColor, modifier = Modifier.size(13.dp))
-        Text(
-            status,
-            fontSize   = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color      = textColor
-        )
-    }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  Info Field (label kecil + value)
-// ─────────────────────────────────────────────────────────────
-@Composable
-private fun BerkasInfoField(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Row(
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier              = Modifier.padding(bottom = 4.dp)
-        ) {
-            Icon(icon, null,
-                tint     = TextHint,
-                modifier = Modifier.size(13.dp))
-            Text(
-                label.uppercase(),
-                fontSize      = 9.sp,
-                fontWeight    = FontWeight.Bold,
-                color         = TextHint,
-                letterSpacing = 0.7.sp
-            )
-        }
-        Text(
-            value,
-            fontSize   = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color      = TextHead
-        )
     }
 }
 
@@ -509,7 +509,9 @@ private fun DetailArsipRow(
     item: Arsip,
     isExpanded: Boolean,
     isLast: Boolean,
-    onEyeClick: () -> Unit
+    onEyeClick: () -> Unit,
+    isEditMode: Boolean,
+    onRemoveClick: () -> Unit
 ) {
     Column {
         // ── Main row ──────────────────────────────────────────
@@ -568,35 +570,54 @@ private fun DetailArsipRow(
                 }
             }
 
-            // Eye button
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .background(
-                        if (isExpanded) GreenPrimary else CardWhite,
-                        RoundedCornerShape(10.dp)
+            if (isEditMode) {
+                // Trash/Delete button
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(DangerBg, RoundedCornerShape(10.dp))
+                        .border(1.5.dp, Color(0xFFFECACA), RoundedCornerShape(10.dp))
+                        .clickable(onClick = onRemoveClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Hapus",
+                        tint = DangerText,
+                        modifier = Modifier.size(17.dp)
                     )
-                    .border(
-                        1.5.dp,
-                        if (isExpanded) GreenPrimary else BorderGray,
-                        RoundedCornerShape(10.dp)
+                }
+            } else {
+                // Eye button
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(
+                            if (isExpanded) GreenPrimary else CardWhite,
+                            RoundedCornerShape(10.dp)
+                        )
+                        .border(
+                            1.5.dp,
+                            if (isExpanded) GreenPrimary else BorderGray,
+                            RoundedCornerShape(10.dp)
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication        = null,
+                            onClick           = onEyeClick
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isExpanded)
+                            Icons.Filled.VisibilityOff
+                        else
+                            Icons.Filled.Visibility,
+                        contentDescription = "Detail",
+                        tint     = if (isExpanded) Color.White else TextHint,
+                        modifier = Modifier.size(17.dp)
                     )
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication        = null,
-                        onClick           = onEyeClick
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isExpanded)
-                        Icons.Filled.VisibilityOff
-                    else
-                        Icons.Filled.Visibility,
-                    contentDescription = "Detail",
-                    tint     = if (isExpanded) Color.White else TextHint,
-                    modifier = Modifier.size(17.dp)
-                )
+                }
             }
         }
 
@@ -823,6 +844,60 @@ private fun DetailRetensiPill(icon: ImageVector, text: String) {
             tint     = GreenPrimary,
             modifier = Modifier.size(12.dp))
         Text(text, fontSize = 11.sp, color = TextBody)
+    }
+}
+
+@Composable
+private fun DetailField(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            label,
+            fontSize      = 9.sp,
+            fontWeight    = FontWeight.Bold,
+            color         = TextHint,
+            letterSpacing = 0.7.sp
+        )
+        Text(
+            value,
+            fontSize   = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color      = TextHead,
+            modifier   = Modifier.padding(top = 2.dp)
+        )
+    }
+}
+
+@Composable
+private fun StatusBadge(status: String) {
+    val bg = when (status) {
+        "Draft" -> Color(0xFFE0F2FE)
+        "Penilaian" -> Color(0xFFFEF3C7)
+        "Disetujui" -> Color(0xFFD1FAE5)
+        "Selesai" -> Color(0xFFECFDF5)
+        else -> Color(0xFFF3F4F6)
+    }
+    val text = when (status) {
+        "Draft" -> Color(0xFF0369A1)
+        "Penilaian" -> Color(0xFFB45309)
+        "Disetujui" -> Color(0xFF047857)
+        "Selesai" -> Color(0xFF065F46)
+        else -> Color(0xFF4B5563)
+    }
+    Box(
+        modifier = Modifier
+            .background(bg, RoundedCornerShape(9999.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(
+            status,
+            fontSize   = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color      = text
+        )
     }
 }
 

@@ -162,4 +162,11 @@ class ArsipRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun removeArchiveFromProposal(archiveId: String, auditLog: AuditLog) = withContext(Dispatchers.IO) {
+        appDatabase.withTransaction {
+            arsipDao.updateArchivesProposal(listOf(archiveId), "AVAILABLE", null)
+            auditLogDao.insertAuditLog(auditLog.toEntity())
+        }
+    }
 }

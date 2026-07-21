@@ -68,6 +68,7 @@ fun LogRiwayatScreen(
     var searchQuery   by remember { mutableStateOf("") }
     var activeFilter  by remember { mutableStateOf("Semua") }
     var expandedId    by remember { mutableStateOf<String?>(null) }
+    var expandedGroups by remember { mutableStateOf(emptySet<String>()) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
@@ -101,15 +102,13 @@ fun LogRiwayatScreen(
     ) {
         Scaffold(
             containerColor = BgDashboard,
+            topBar = {
+                LogTopBar(onMenuClick = { scope.launch { drawerState.open() } })
+            },
             bottomBar = {
                 PemusnahanBottomBar(
                     currentRoute = DrawerRoutes.LOG_RIWAYAT,
                     onNavigate   = onNavigate
-                )
-            },
-            topBar = {
-                LogTopBar(
-                    onMenuClick = { scope.launch { drawerState.open() } }
                 )
             }
         ) { padding ->
@@ -135,21 +134,23 @@ fun LogRiwayatScreen(
                     }
                 }
                 is ResultState.Success -> {
-                    val logList = state.data
-                    val filteredList = logList.filter { log ->
-                        val matchFilter = activeFilter == "Semua" || log.categoryName == activeFilter
-                        val matchSearch = searchQuery.isBlank() ||
-                                log.title.contains(searchQuery, ignoreCase = true) ||
-                                log.description.contains(searchQuery, ignoreCase = true) ||
-                                log.person.contains(searchQuery, ignoreCase = true) ||
-                                (log.relatedBerkas?.contains(searchQuery, ignoreCase = true) ?: false)
-                        matchFilter && matchSearch
+                    val groupedMap = state.data
+                    val filteredGrouped = remember(groupedMap, searchQuery, activeFilter) {
+                        groupedMap.mapValues { (_, entries) ->
+                            entries.filter { log ->
+                                val matchFilter = activeFilter == "Semua" || log.categoryName == activeFilter
+                                val matchSearch = searchQuery.isBlank() ||
+                                        log.title.contains(searchQuery, ignoreCase = true) ||
+                                        log.description.contains(searchQuery, ignoreCase = true) ||
+                                        log.person.contains(searchQuery, ignoreCase = true) ||
+                                        (log.relatedBerkas?.contains(searchQuery, ignoreCase = true) ?: false)
+                                matchFilter && matchSearch
+                            }
+                        }.filter { it.value.isNotEmpty() }
                     }
 
-                    // Group by date, preserving database timestamp DESC sorting
-                    val grouped = filteredList.groupBy { log -> log.dateGroup }
-                        .toList()
-                        .sortedByDescending { it.second.firstOrNull()?.sortKey ?: 0L }
+                    val totalActivities = remember(groupedMap) { groupedMap.values.flatten().size }
+                    val totalUsers = remember(groupedMap) { groupedMap.values.flatten().map { it.person }.distinct().size }
 
                     LazyColumn(
                         modifier = Modifier
@@ -168,7 +169,7 @@ fun LogRiwayatScreen(
                         item {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 LogStatBox(
-                                    value    = "${logList.size}",
+                                    value    = "$totalActivities",
                                     label    = "Total Aktivitas",
                                     icon     = Icons.Filled.History,
                                     bgColor  = CardWhite,
@@ -176,7 +177,7 @@ fun LogRiwayatScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                                 LogStatBox(
-                                    value    = "${logList.map { it.person }.distinct().size}",
+                                    value    = "$totalUsers",
                                     label    = "Pengguna",
                                     icon     = Icons.Filled.Group,
                                     bgColor  = BlueBg,
@@ -232,7 +233,7 @@ fun LogRiwayatScreen(
                         }
 
                         // ── Empty state ──────────────────────────────
-                        if (grouped.isEmpty()) {
+                        if (filteredGrouped.isEmpty()) {
                             item {
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
@@ -260,30 +261,46 @@ fun LogRiwayatScreen(
                             }
                         }
 
-                        // ── Grouped log entries ──────────────────────
-                        grouped.forEach { (groupName, entries) ->
+                        // ── Grouped log entries accordion ─────────────
+                        filteredGrouped.forEach { (groupName, entries) ->
+                            val isGroupExpanded = expandedGroups.contains(groupName)
+                            
                             item {
-                                DateGroupHeader(label = groupName, count = entries.size)
+                                DocumentGroupHeader(
+                                    title = groupName,
+                                    logCount = entries.size,
+                                    isExpanded = isGroupExpanded,
+                                    onClick = {
+                                        expandedGroups = if (isGroupExpanded) {
+                                            expandedGroups - groupName
+                                        } else {
+                                            expandedGroups + groupName
+                                        }
+                                    }
+                                )
                             }
-                            item {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape    = RoundedCornerShape(16.dp),
-                                    colors   = CardDefaults.cardColors(containerColor = CardWhite),
-                                    border   = BorderStroke(1.dp, BorderGray)
-                                ) {
-                                    Column {
-                                        entries.forEachIndexed { index, log ->
-                                            val isExpanded = expandedId == log.id
-                                            val isLast     = index == entries.lastIndex
-                                            LogEntryRow(
-                                                log        = log,
-                                                isExpanded = isExpanded,
-                                                isLast     = isLast,
-                                                onToggle   = {
-                                                    expandedId = if (isExpanded) null else log.id
-                                                }
-                                            )
+
+                            if (isGroupExpanded) {
+                                item {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape    = RoundedCornerShape(16.dp),
+                                        colors   = CardDefaults.cardColors(containerColor = CardWhite),
+                                        border   = BorderStroke(1.dp, BorderGray)
+                                    ) {
+                                        Column {
+                                            entries.forEachIndexed { index, log ->
+                                                val isRowExpanded = expandedId == log.id
+                                                val isLast     = index == entries.lastIndex
+                                                LogEntryRow(
+                                                    log        = log,
+                                                    isExpanded = isRowExpanded,
+                                                    isLast     = isLast,
+                                                    onToggle   = {
+                                                        expandedId = if (isRowExpanded) null else log.id
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -318,6 +335,78 @@ private fun LogTopBar(onMenuClick: () -> Unit) {
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenPrimary)
     )
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Document Group Header (Accordion Header)
+// ─────────────────────────────────────────────────────────────
+@Composable
+private fun DocumentGroupHeader(
+    title: String,
+    logCount: Int,
+    isExpanded: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isExpanded) Color(0xFFF1F8F1) else CardWhite
+        ),
+        border = BorderStroke(1.dp, if (isExpanded) GreenMid else BorderGray)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(
+                            if (isExpanded) GreenPrimary else GreenLight,
+                            RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Description,
+                        contentDescription = null,
+                        tint = if (isExpanded) Color.White else GreenPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextHead
+                    )
+                    Text(
+                        text = "$logCount Aktivitas",
+                        fontSize = 11.sp,
+                        color = TextHint
+                    )
+                }
+            }
+            Icon(
+                imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = if (isExpanded) "Sembunyikan" else "Tampilkan",
+                tint = TextHint,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -515,7 +604,7 @@ private fun LogEntryRow(
                     Text(log.person,
                         fontSize   = 10.sp,
                         fontWeight = FontWeight.Medium,
-                        color      = TextHint)
+                        color = TextHint)
                     if (log.relatedBerkas != null) {
                         Text("•", fontSize = 10.sp, color = TextHint)
                         Icon(Icons.Filled.Link, null,

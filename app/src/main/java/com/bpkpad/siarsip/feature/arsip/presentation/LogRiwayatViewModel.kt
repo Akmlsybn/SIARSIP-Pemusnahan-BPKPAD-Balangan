@@ -14,10 +14,20 @@ class LogRiwayatViewModel @Inject constructor(
     private val getAuditLogsUseCase: GetAuditLogsUseCase
 ) : ViewModel() {
 
-    val uiState: StateFlow<ResultState<List<LogEntry>>> = getAuditLogsUseCase()
+    val uiState: StateFlow<ResultState<Map<String, List<LogEntry>>>> = getAuditLogsUseCase()
         .map { logs ->
+            // Filter out system logs
             val filteredLogs = logs.filter { it.categoryName != "Sistem" }
-            ResultState.Success(filteredLogs) as ResultState<List<LogEntry>>
+            
+            // Group logs by proposal/document name, fallback to "Dokumen Lainnya" if null
+            val grouped = filteredLogs.groupBy { it.relatedBerkas ?: "Dokumen Lainnya" }
+            
+            // Sort groups so that the group containing the newest log is at the top
+            val sortedGrouped = grouped.toList()
+                .sortedByDescending { pair -> pair.second.maxOfOrNull { it.sortKey } ?: 0L }
+                .toMap()
+
+            ResultState.Success(sortedGrouped) as ResultState<Map<String, List<LogEntry>>>
         }
         .onStart {
             emit(ResultState.Loading)

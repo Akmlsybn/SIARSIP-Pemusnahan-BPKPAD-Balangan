@@ -53,6 +53,7 @@ import kotlinx.coroutines.Dispatchers
 fun DaftarUsulMusnahScreen(
     onBuatBerkas: () -> Unit = {},
     onNavigate: (String) -> Unit = {},
+    onDetailClick: (String) -> Unit = {},
     viewModel: DaftarUsulMusnahViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -358,7 +359,8 @@ fun DaftarUsulMusnahScreen(
                                     onExportExcel = { berkas ->
                                         proposalToExport = berkas
                                         exportLauncher.launch("Daftar_Arsip_Usul_Musnah_${berkas.nomorBerkas.replace("/", "_")}.xlsx")
-                                    }
+                                    },
+                                    onDetailClick = onDetailClick
                                 )
                             }
                         }
@@ -581,7 +583,8 @@ private fun ArchiveRowCard(
     isExpanded: Boolean,
     isLast: Boolean,
     onEyeClick: () -> Unit,
-    onExportExcel: (BerkasUsulMusnah) -> Unit
+    onExportExcel: (BerkasUsulMusnah) -> Unit,
+    onDetailClick: (String) -> Unit
 ) {
     val bottomShape = if (isLast && !isExpanded)
         RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
@@ -681,7 +684,12 @@ private fun ArchiveRowCard(
             enter   = expandVertically() + fadeIn(),
             exit    = shrinkVertically() + fadeOut()
         ) {
-            DetailPanel(item = item, onExportExcel = onExportExcel, onClose = onEyeClick)
+            DetailPanel(
+                item = item,
+                onExportExcel = onExportExcel,
+                onClose = onEyeClick,
+                onDetailClick = onDetailClick
+            )
         }
     }
 }
@@ -693,7 +701,8 @@ private fun ArchiveRowCard(
 private fun DetailPanel(
     item: BerkasUsulMusnah,
     onExportExcel: (BerkasUsulMusnah) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onDetailClick: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -835,22 +844,44 @@ private fun DetailPanel(
             StatusBadge(item.status)
         }
 
-        if (item.status == "APPROVED" || item.status == "DISPOSED") {
-            Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Button(
-                onClick = { onExportExcel(item) },
+                onClick = { onDetailClick(item.nomorBerkas) },
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = GreenPrimary,
-                    contentColor = Color.White
-                )
+                    containerColor = GreenLight,
+                    contentColor = GreenPrimary
+                ),
+                border = BorderStroke(1.5.dp, GreenPrimary)
             ) {
-                Icon(Icons.Filled.FileDownload, null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.Info, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Export Excel (.xlsx)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Detail Berkas", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
+
+            if (item.status == "APPROVED" || item.status == "DISPOSED") {
+                Button(
+                    onClick = { onExportExcel(item) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenPrimary,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(Icons.Filled.FileDownload, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Export Excel", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

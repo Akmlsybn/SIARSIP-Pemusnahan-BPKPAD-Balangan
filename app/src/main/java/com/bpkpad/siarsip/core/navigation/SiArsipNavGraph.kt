@@ -44,7 +44,7 @@ private fun NavHostController.navigateToRoute(route: String, onLogout: () -> Uni
             }
         }
         else -> navigate(route) {
-            popUpTo(graph.findStartDestination().id) {
+            popUpTo(Screen.Dashboard.route) {
                 saveState = true
             }
             launchSingleTop = true
@@ -124,7 +124,10 @@ fun SiArsipNavGraph(
         composable(Screen.DaftarUsulMusnah.route) {
             DaftarUsulMusnahScreen(
                 onBuatBerkas = { navController.navigate(Screen.BuatBerkasUsulMusnah.route) },
-                onNavigate = { route -> navController.navigateToRoute(route, onLogout) }
+                onNavigate = { route -> navController.navigateToRoute(route, onLogout) },
+                onDetailClick = { berkasNomor ->
+                    navController.navigate(Screen.DetailBerkasUsulMusnah.createRoute(berkasNomor))
+                }
             )
         }
 
@@ -161,7 +164,6 @@ fun SiArsipNavGraph(
 
         composable(Screen.DetailBerkasUsulMusnah.route) {
             DetailBerkasUsulMusnahScreen(
-                berkas = dummyBerkasDetail,
                 onBack = { navController.popBackStack() },
                 onExportPdf = { /* TODO */ },
                 onLihatTracking = { navController.navigate(Screen.StatusTracking.route) }

@@ -110,7 +110,7 @@ fun StatusTrackingScreen(
                     onClick = {
                         val berkas = showRevisionConfirmFor
                         if (berkas != null) {
-                            viewModel.deleteProposalForRevision(proposalId = berkas.proposalId)
+                            viewModel.updateProposalStatus(proposalId = berkas.proposalId, newStatus = "PROPOSED")
                         }
                         showRevisionConfirmFor = null
                     }

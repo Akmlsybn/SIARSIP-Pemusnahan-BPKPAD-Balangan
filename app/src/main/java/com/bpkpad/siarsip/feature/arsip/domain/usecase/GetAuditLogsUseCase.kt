@@ -55,6 +55,9 @@ class GetAuditLogsUseCase @Inject constructor(
                     "CANCEL_PROPOSAL" -> {
                         Pair("Berkas", "Berkas dikembalikan untuk revisi")
                     }
+                    "REMOVE_ARCHIVE_FROM_PROPOSAL" -> {
+                        Pair("Berkas", "Arsip dihapus dari berkas")
+                    }
                     "UPDATE_PROPOSAL_STATUS" -> {
                         when (log.newStatus) {
                             "VERIFIED" -> Pair("Penilaian", "Tim Penilai menyetujui usul")
