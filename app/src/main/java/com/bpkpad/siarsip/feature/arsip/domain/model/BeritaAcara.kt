@@ -10,6 +10,10 @@ data class BeritaAcara(
     val keterangan: String?,
     val metode: String = "Pencacahan",
     val createdAt: Long,
+    val fotoDokumentasiUri: String? = null,
     val signatories: List<Penandatangan> = emptyList(),
     val archives: List<Arsip> = emptyList()
-)
+) {
+    val fotoDokumentasiList: List<String>
+        get() = fotoDokumentasiUri?.split("|")?.filter { it.isNotBlank() } ?: emptyList()
+}

@@ -45,7 +45,8 @@ class GetBeritaAcaraUseCase @Inject constructor(
                     jumlahArsip = ba.archives.size,
                     sumber = proposal?.sumberModul ?: "-",
                     tahun = year,
-                    penandatangan = ba.signatories
+                    penandatangan = ba.signatories,
+                    fotoDokumentasiUri = ba.fotoDokumentasiUri
                 )
             }
         }

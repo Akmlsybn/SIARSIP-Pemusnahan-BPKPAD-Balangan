@@ -12,9 +12,26 @@ class DatabaseCallback : RoomDatabase.Callback() {
         seedData(db)
     }
 
-    override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
-        super.onDestructiveMigration(db)
-        seedData(db)
+    override fun onOpen(db: SupportSQLiteDatabase) {
+        super.onOpen(db)
+        ensureDataSeeded(db)
+    }
+
+    private fun ensureDataSeeded(db: SupportSQLiteDatabase) {
+        try {
+            val cursor = db.query("SELECT COUNT(*) FROM users WHERE username = 'admin'")
+            var count = 0
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0)
+            }
+            cursor.close()
+
+            if (count == 0) {
+                seedData(db)
+            }
+        } catch (e: Exception) {
+            // Ignore if check fails
+        }
     }
 
     private fun seedData(db: SupportSQLiteDatabase) {
@@ -150,8 +167,8 @@ class DatabaseCallback : RoomDatabase.Callback() {
 
         // 5. Seed initial Berita Acara
         db.execSQL("""
-            INSERT INTO berita_acara (id, nomorBa, tanggalEksekusi, penanggungJawab, saksi1, saksi2, keterangan, metode, createdAt)
-            VALUES ('init-ba-uuid-11111', 'BA.03.01/001/BPKPAD/2025', '15 Mei 2025', 'Ahmad Fauzi', 'H. Supian, S.Sos', 'M. Rasyid, A.Md', 'Pemusnahan fisik arsip keuangan kurun waktu 2013-2014.', 'Pencacahan', ${now - 3600000 * 5})
+            INSERT INTO berita_acara (id, nomorBa, tanggalEksekusi, penanggungJawab, saksi1, saksi2, keterangan, metode, createdAt, fotoDokumentasiUri)
+            VALUES ('init-ba-uuid-11111', 'BA.03.01/001/BPKPAD/2025', '15 Mei 2025', 'Ahmad Fauzi', 'H. Supian, S.Sos', 'M. Rasyid, A.Md', 'Pemusnahan fisik arsip keuangan kurun waktu 2013-2014.', 'Pencacahan', ${now - 3600000 * 5}, NULL)
         """.trimIndent())
 
         // 6. Seed signatories (penandatangan)

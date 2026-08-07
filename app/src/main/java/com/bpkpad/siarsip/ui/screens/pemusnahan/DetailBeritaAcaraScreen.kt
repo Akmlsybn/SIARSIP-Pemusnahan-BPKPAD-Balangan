@@ -41,6 +41,9 @@ import androidx.compose.ui.platform.LocalContext
 import com.bpkpad.siarsip.core.utils.PdfExportManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 
 // ─────────────────────────────────────────────────────────────
 //  Screen Utama
@@ -186,6 +189,73 @@ fun DetailBeritaAcaraScreen(
                                         number = index + 1,
                                         p      = p,
                                         isLast = index == ba.penandatangan.lastIndex
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Section: Foto Dokumentasi (Maksimal 3 Foto) ─────────────────
+                    val fotoList = ba.fotoDokumentasiList
+                    if (fotoList.isNotEmpty()) {
+                        item {
+                            DetailSectionHeader(
+                                icon  = Icons.Filled.PhotoCamera,
+                                title = "Foto Dokumentasi Pemusnahan",
+                                badge = "${fotoList.size} foto"
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape    = RoundedCornerShape(16.dp),
+                                colors   = CardDefaults.cardColors(containerColor = CardWhite),
+                                border   = BorderStroke(1.dp, BorderGray)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    if (fotoList.size == 1) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(200.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .border(1.dp, BorderGray, RoundedCornerShape(12.dp))
+                                        ) {
+                                            AsyncImage(
+                                                model = fotoList[0],
+                                                contentDescription = "Foto Dokumentasi 1",
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                    } else {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            fotoList.forEachIndexed { index, uriStr ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .height(130.dp)
+                                                        .clip(RoundedCornerShape(10.dp))
+                                                        .border(1.dp, BorderGray, RoundedCornerShape(10.dp))
+                                                ) {
+                                                    AsyncImage(
+                                                        model = uriStr,
+                                                        contentDescription = "Foto Dokumentasi ${index + 1}",
+                                                        contentScale = ContentScale.Crop,
+                                                        modifier = Modifier.fillMaxSize()
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        "Lampiran fisik pelaksanaan pemusnahan arsip (${fotoList.size} foto)",
+                                        fontSize = 11.sp,
+                                        color = TextHint,
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }

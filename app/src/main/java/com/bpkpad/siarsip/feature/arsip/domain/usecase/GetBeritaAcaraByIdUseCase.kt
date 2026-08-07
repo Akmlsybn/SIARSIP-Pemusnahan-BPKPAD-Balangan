@@ -51,7 +51,8 @@ class GetBeritaAcaraByIdUseCase @Inject constructor(
                 suratPertimbanganPerihal = proposal?.suratPertimbanganPerihal,
                 jenisPersetujuanAkhir = proposal?.jenisPersetujuanAkhir,
                 nomorPersetujuanAkhir = proposal?.nomorPersetujuanAkhir,
-                perihalPersetujuanAkhir = proposal?.perihalPersetujuanAkhir
+                perihalPersetujuanAkhir = proposal?.perihalPersetujuanAkhir,
+                fotoDokumentasiUri = ba.fotoDokumentasiUri
             )
         }
     }

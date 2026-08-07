@@ -19,7 +19,8 @@ class CreateBeritaAcaraUseCase @Inject constructor(
         metode: String,
         proposalId: String,
         signatoriesInput: List<Penandatangan>,
-        actorId: String
+        actorId: String,
+        fotoDokumentasiUri: String? = null
     ): Result<Unit> {
         return try {
             // Validation
@@ -69,7 +70,8 @@ class CreateBeritaAcaraUseCase @Inject constructor(
                 saksi2 = saksi2Nama,
                 keterangan = keterangan,
                 metode = metode,
-                createdAt = System.currentTimeMillis()
+                createdAt = System.currentTimeMillis(),
+                fotoDokumentasiUri = fotoDokumentasiUri
             )
  
             // Execute in repository

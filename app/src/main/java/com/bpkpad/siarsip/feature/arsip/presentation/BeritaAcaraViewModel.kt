@@ -47,6 +47,31 @@ class BeritaAcaraViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    private val _selectedFotoUris = MutableStateFlow<List<String>>(emptyList())
+    val selectedFotoUris: StateFlow<List<String>> = _selectedFotoUris.asStateFlow()
+
+    fun addFotoUris(newUris: List<String>) {
+        val current = _selectedFotoUris.value.toMutableList()
+        for (uri in newUris) {
+            if (current.size < 3 && !current.contains(uri)) {
+                current.add(uri)
+            }
+        }
+        _selectedFotoUris.value = current
+    }
+
+    fun removeFotoUri(index: Int) {
+        val current = _selectedFotoUris.value.toMutableList()
+        if (index in current.indices) {
+            current.removeAt(index)
+            _selectedFotoUris.value = current
+        }
+    }
+
+    fun clearFotoUris() {
+        _selectedFotoUris.value = emptyList()
+    }
+
     private val _createState = MutableStateFlow<ResultState<Unit>>(ResultState.Success(Unit))
     val createState: StateFlow<ResultState<Unit>> = _createState.asStateFlow()
 
@@ -60,6 +85,7 @@ class BeritaAcaraViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             _createState.value = ResultState.Loading
+            val joinedUri = _selectedFotoUris.value.joinToString("|").takeIf { it.isNotBlank() }
             createBeritaAcaraUseCase(
                 nomorBa = nomorBa,
                 tanggalEksekusi = tanggalEksekusi,
@@ -67,10 +93,12 @@ class BeritaAcaraViewModel @Inject constructor(
                 metode = metode,
                 proposalId = proposalId,
                 signatoriesInput = signatories,
-                actorId = "admin"
+                actorId = "admin",
+                fotoDokumentasiUri = joinedUri
             ).fold(
                 onSuccess = {
                     _createState.value = ResultState.Success(Unit)
+                    _selectedFotoUris.value = emptyList()
                 },
                 onFailure = {
                     _createState.value = ResultState.Error(it)
@@ -81,5 +109,6 @@ class BeritaAcaraViewModel @Inject constructor(
 
     fun resetCreateState() {
         _createState.value = ResultState.Success(Unit)
+        _selectedFotoUris.value = emptyList()
     }
 }

@@ -31,6 +31,18 @@ object PdfExportManager {
         drawPage2(canvas2, ba)
         pdfDocument.finishPage(page2)
 
+        // ── Halaman 3: Lampiran Foto Dokumentasi (Jika Ada) ───────────
+        if (!ba.fotoDokumentasiUri.isNullOrBlank()) {
+            try {
+                val pageInfo3 = PdfDocument.PageInfo.Builder(595, 842, 3).create()
+                val page3 = pdfDocument.startPage(pageInfo3)
+                drawPage3(context, page3.canvas, ba)
+                pdfDocument.finishPage(page3)
+            } catch (e: Exception) {
+                // Abaikan jika halaman 3 gagal digambar
+            }
+        }
+
         // Tulis dokumen ke stream
         pdfDocument.writeTo(outputStream)
         pdfDocument.close()
@@ -194,6 +206,95 @@ object PdfExportManager {
             val nameWidth = boldPaint.measureText(pj.nama)
             canvas.drawLine(425f - (nameWidth / 2f), rightY + 2f, 425f + (nameWidth / 2f), rightY + 2f, regularPaint)
             rightY += 40f
+        }
+    }
+
+    private fun drawPage3(context: Context, canvas: Canvas, ba: BeritaAcaraItem) {
+        val paint = Paint().apply {
+            color = Color.BLACK
+            isAntiAlias = true
+        }
+
+        // Header Judul Lampiran
+        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.textSize = 12f
+        drawCenteredText(canvas, "LAMPIRAN DOKUMENTASI PEMUSNAHAN ARSIP", paint, 297.5f, 60f)
+
+        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+        paint.textSize = 10f
+        drawCenteredText(canvas, "Nomor B.A.: ${ba.nomor}  |  Tanggal Eksekusi: ${ba.tanggal}", paint, 297.5f, 76f)
+
+        // Garis Pembatas Header
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1.5f
+        canvas.drawLine(54f, 90f, 541f, 90f, paint)
+
+        // Decode & Gambar Bitmap Foto-Foto Dokumentasi (Maks 3 Foto)
+        val fotoList = ba.fotoDokumentasiList
+        if (fotoList.isNotEmpty()) {
+            val count = fotoList.size
+            var currentY = 110f
+
+            val slotHeight = when (count) {
+                1 -> 450f
+                2 -> 240f
+                else -> 170f
+            }
+
+            fotoList.take(3).forEachIndexed { index, photoUriStr ->
+                try {
+                    val uri = android.net.Uri.parse(photoUriStr)
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                    inputStream?.close()
+
+                    if (originalBitmap != null) {
+                        val availableWidth = 487f // 595 - 54 - 54
+                        val maxPhotoHeight = slotHeight - 20f
+                        val aspect = originalBitmap.width.toFloat() / originalBitmap.height.toFloat()
+
+                        var targetW = availableWidth
+                        var targetH = targetW / aspect
+                        if (targetH > maxPhotoHeight) {
+                            targetH = maxPhotoHeight
+                            targetW = targetH * aspect
+                        }
+
+                        val startX = 54f + (availableWidth - targetW) / 2f
+                        val startY = currentY + (maxPhotoHeight - targetH) / 2f
+
+                        val destRect = RectF(startX, startY, startX + targetW, startY + targetH)
+                        val srcRect = Rect(0, 0, originalBitmap.width, originalBitmap.height)
+
+                        paint.style = Paint.Style.FILL
+                        canvas.drawBitmap(originalBitmap, srcRect, destRect, paint)
+
+                        // Bingkai foto
+                        paint.style = Paint.Style.STROKE
+                        paint.strokeWidth = 1f
+                        paint.color = Color.GRAY
+                        canvas.drawRect(destRect, paint)
+
+                        // Keterangan di bawah foto
+                        paint.style = Paint.Style.FILL
+                        paint.color = Color.DKGRAY
+                        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
+                        paint.textSize = 8.5f
+                        val caption = if (count == 1) {
+                            "Dokumentasi Fisik Pelaksanaan Pemusnahan Arsip di ${ba.lokasi}"
+                        } else {
+                            "Foto Dokumentasi ${index + 1}: Pelaksanaan Pemusnahan Arsip di ${ba.lokasi}"
+                        }
+                        drawCenteredText(canvas, caption, paint, 297.5f, startY + targetH + 12f)
+                    }
+                } catch (e: Exception) {
+                    paint.style = Paint.Style.FILL
+                    paint.color = Color.RED
+                    paint.textSize = 9f
+                    drawCenteredText(canvas, "Foto ${index + 1} gagal dimuat", paint, 297.5f, currentY + (slotHeight / 2f))
+                }
+                currentY += slotHeight + 20f
+            }
         }
     }
 

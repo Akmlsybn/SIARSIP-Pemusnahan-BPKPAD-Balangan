@@ -37,6 +37,12 @@ import com.bpkpad.siarsip.ui.components.PemusnahanDrawerContent
 import com.bpkpad.siarsip.ui.components.PemusnahanBottomBar
 import com.bpkpad.siarsip.ui.theme.*
 import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 
 // ─────────────────────────────────────────────────────────────
 //  Data Class Input Penandatangan
@@ -72,6 +78,14 @@ fun BeritaAcaraScreen(
 
     val approvedProposals by viewModel.approvedProposals.collectAsState()
     val createState by viewModel.createState.collectAsState()
+    val selectedFotoUris by viewModel.selectedFotoUris.collectAsState()
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 3),
+        onResult = { uris ->
+            viewModel.addFotoUris(uris.map { it.toString() })
+        }
+    )
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
@@ -127,6 +141,7 @@ fun BeritaAcaraScreen(
                         keterangan = ""
                         metode = "Pencacahan"
                         selectedProposalId = ""
+                        viewModel.clearFotoUris()
                         viewModel.resetCreateState()
                         showCreateDialog = true
                     },
@@ -495,6 +510,91 @@ fun BeritaAcaraScreen(
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+
+                    // ── Section Upload Foto Dokumentasi (OUTSIDE signatories loop) ──────
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "FOTO DOKUMENTASI PEMUSNAHAN (MAKSIMAL 3 FOTO)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextHint,
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    if (selectedFotoUris.size < 3) {
+                        OutlinedButton(
+                            onClick = {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, GreenPrimary),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = GreenPrimary
+                            )
+                        ) {
+                            Icon(
+                                Icons.Filled.AddPhotoAlternate,
+                                contentDescription = "Upload Foto",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                if (selectedFotoUris.isNotEmpty()) "Tambah Foto (${selectedFotoUris.size}/3)" else "Upload Foto Dokumentasi (Maks 3)",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    if (selectedFotoUris.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            selectedFotoUris.forEachIndexed { imgIndex, uriStr ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(110.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .border(1.dp, BorderGray, RoundedCornerShape(10.dp))
+                                ) {
+                                    AsyncImage(
+                                        model = uriStr,
+                                        contentDescription = "Foto ${imgIndex + 1}",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                    IconButton(
+                                        onClick = { viewModel.removeFotoUri(imgIndex) },
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(4.dp)
+                                            .size(24.dp)
+                                            .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(9999.dp))
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Close,
+                                            contentDescription = "Hapus Foto",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            // Fill remaining space if less than 3
+                            repeat(3 - selectedFotoUris.size) {
+                                Spacer(modifier = Modifier.weight(1f))
                             }
                         }
                     }

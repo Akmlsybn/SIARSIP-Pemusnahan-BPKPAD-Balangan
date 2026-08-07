@@ -88,6 +88,7 @@ fun BeritaAcaraEntity.toDomain(signatories: List<Penandatangan> = emptyList(), a
     keterangan = keterangan,
     metode = metode,
     createdAt = createdAt,
+    fotoDokumentasiUri = fotoDokumentasiUri,
     signatories = signatories,
     archives = archives
 )
@@ -107,7 +108,8 @@ fun BeritaAcara.toEntity(): BeritaAcaraEntity = BeritaAcaraEntity(
     saksi2 = saksi2,
     keterangan = keterangan,
     metode = metode,
-    createdAt = createdAt
+    createdAt = createdAt,
+    fotoDokumentasiUri = fotoDokumentasiUri
 )
 
 fun PenandatanganEntity.toDomain(): Penandatangan = Penandatangan(

@@ -14,5 +14,6 @@ data class BeritaAcaraEntity(
     val saksi2: String?,
     val keterangan: String?,
     val metode: String = "Pencacahan",
-    val createdAt: Long
+    val createdAt: Long,
+    val fotoDokumentasiUri: String? = null
 )

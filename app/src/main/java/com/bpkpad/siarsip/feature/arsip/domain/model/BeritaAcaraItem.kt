@@ -17,5 +17,9 @@ data class BeritaAcaraItem(
     val suratPertimbanganPerihal: String? = null,
     val jenisPersetujuanAkhir: String? = null,
     val nomorPersetujuanAkhir: String? = null,
-    val perihalPersetujuanAkhir: String? = null
-)
+    val perihalPersetujuanAkhir: String? = null,
+    val fotoDokumentasiUri: String? = null
+) {
+    val fotoDokumentasiList: List<String>
+        get() = fotoDokumentasiUri?.split("|")?.filter { it.isNotBlank() } ?: emptyList()
+}
