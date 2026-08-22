@@ -24,13 +24,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bpkpad.siarsip.core.navigation.Screen
 import com.bpkpad.siarsip.ui.theme.*
 
 // ─────────────────────────────────────────────────────────────
 //  Route constants — pakai di semua layar
 // ─────────────────────────────────────────────────────────────
 object DrawerRoutes {
+    const val MODULE_SELECTION    = "module_selection"
     const val DASHBOARD           = "dashboard"
+    const val KEUANGAN            = "keuangan_home"
     const val DAFTAR_ARSIP        = "daftar_arsip"
     const val DAFTAR_USUL_MUSNAH  = "daftar_usul_musnah"
     const val TRACKING            = "status_tracking"
@@ -101,11 +104,21 @@ fun PemusnahanDrawerContent(
         )
     }
 
+    val portalItem = DrawerItem(
+        route       = Screen.ModuleSelection.route,
+        name        = "Portal Hub",
+        description = "Kembali ke pemilihan modul utama",
+        icon        = Icons.Filled.GridView,
+        badge       = "Utama",
+        badgeBg     = Color(0xFF3B82F6),
+        badgeTextColor = Color.White
+    )
+
     val menuItems = listOf(
         DrawerItem(
             route       = DrawerRoutes.DASHBOARD,
-            name        = "Beranda",
-            description = "Halaman utama dashboard",
+            name        = "Beranda Pemusnahan",
+            description = "Halaman utama modul pemusnahan",
             icon        = Icons.Filled.Home
         ),
         DrawerItem(
@@ -113,6 +126,15 @@ fun PemusnahanDrawerContent(
             name        = "Profil Akun",
             description = "Detail profil pengguna",
             icon        = Icons.Filled.AccountCircle
+        )
+    )
+
+    val quickSwitchItems = listOf(
+        DrawerItem(
+            route       = Screen.KeuanganHome.route,
+            name        = "Arsip Keuangan",
+            description = "Pindah cepat ke Modul Keuangan",
+            icon        = Icons.Filled.AccountBalanceWallet
         )
     )
 
@@ -132,8 +154,26 @@ fun PemusnahanDrawerContent(
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 8.dp)
         ) {
+            DrawerSectionLabel("PORTAL HUB")
+            DrawerMenuItem(
+                item        = portalItem,
+                isActive    = currentRoute == portalItem.route,
+                onNavigate  = onNavigate
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
             DrawerSectionLabel("MENU UTAMA")
             menuItems.forEach { item ->
+                DrawerMenuItem(
+                    item        = item,
+                    isActive    = currentRoute == item.route,
+                    onNavigate  = onNavigate
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            DrawerSectionLabel("PINTAS MODUL (QUICK SWITCH)")
+            quickSwitchItems.forEach { item ->
                 DrawerMenuItem(
                     item        = item,
                     isActive    = currentRoute == item.route,
@@ -200,7 +240,7 @@ private fun DrawerHeroHeader() {
 
             Text("Ahmad Fauzi",
                 fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text("Admin Arsip • Bidang Pemusnahan",
+            Text("Admin Arsip • Super App BPKPAD",
                 fontSize = 11.sp, color = Color.White.copy(alpha = 0.75f),
                 modifier = Modifier.padding(top = 3.dp))
 

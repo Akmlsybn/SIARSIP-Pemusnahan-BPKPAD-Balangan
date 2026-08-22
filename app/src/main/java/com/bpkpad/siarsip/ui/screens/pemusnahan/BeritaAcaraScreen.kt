@@ -608,20 +608,25 @@ fun BeritaAcaraScreen(
 
                 Button(
                     onClick = {
+                        val nomorBaErr = com.bpkpad.siarsip.core.utils.PemusnahanInputRules.validateNomorBa(nomorBa)
+                        if (nomorBaErr != null) {
+                            Toast.makeText(context, nomorBaErr, Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
                         val mappedSigs = signatoriesList.map {
                             Penandatangan(
                                 id = "",
                                 beritaAcaraId = "",
-                                nama = it.nama,
-                                jabatan = it.jabatan,
+                                nama = com.bpkpad.siarsip.core.utils.PemusnahanInputRules.sanitize(it.nama),
+                                jabatan = com.bpkpad.siarsip.core.utils.PemusnahanInputRules.sanitize(it.jabatan),
                                 role = it.role,
                                 urutan = 0
                             )
                         }
                         viewModel.createBeritaAcara(
-                            nomorBa = nomorBa,
+                            nomorBa = com.bpkpad.siarsip.core.utils.PemusnahanInputRules.sanitize(nomorBa),
                             tanggalEksekusi = tanggalEksekusi,
-                            keterangan = keterangan.takeIf { it.isNotBlank() },
+                            keterangan = com.bpkpad.siarsip.core.utils.PemusnahanInputRules.sanitize(keterangan).takeIf { it.isNotBlank() },
                             metode = metode,
                             proposalId = selectedProposalId,
                             signatories = mappedSigs

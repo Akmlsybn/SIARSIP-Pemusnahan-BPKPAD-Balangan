@@ -1,0 +1,1237 @@
+package com.example.arsipbpkpad.presentation.archive.add.manual
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bpkpad.siarsip.R
+import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.ClassificationCode
+import com.example.arsipbpkpad.domain.model.DocCondition
+import com.example.arsipbpkpad.domain.model.DocCopyType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults.normalizeDocumentType
+import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canMutateArchive
+import com.example.arsipbpkpad.presentation.components.BottomNavItem
+import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
+import com.example.arsipbpkpad.presentation.components.BpkpadLogoScreenTopAppBar
+import com.example.arsipbpkpad.presentation.components.FormDropdownField
+import com.example.arsipbpkpad.presentation.components.FormEditableDropdownField
+import com.example.arsipbpkpad.presentation.components.FormTextField
+import com.example.arsipbpkpad.presentation.components.StatusDialog
+import com.example.arsipbpkpad.utils.CurrencyVisualTransformation
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RapidInputScreen(
+    sessionId: String,
+    onNavigateBack: () -> Unit,
+    onNavigateToScan: () -> Unit,
+    onNavigateToBottomNav: (BottomNavItem) -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN,
+    viewModel: RapidInputViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showClassificationSheet by remember { mutableStateOf(false) }
+    var showUploadConfirmDialog by remember { mutableStateOf(false) }
+    var showEditConfirmDialog by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(sessionId) {
+        if (sessionId.isNotEmpty()) {
+            viewModel.onEvent(RapidInputUiEvent.SetCurrentSession(sessionId))
+        }
+    }
+
+    if (showUploadConfirmDialog) {
+        BpkpadConfirmDialog(
+            title = stringResource(R.string.btn_push_to_db),
+            message = stringResource(R.string.msg_confirm_staging),
+            confirmText = stringResource(R.string.btn_confirm),
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = {
+                uiState.currentSessionId?.let { viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) }
+                showUploadConfirmDialog = false
+            },
+            onDismiss = { showUploadConfirmDialog = false }
+        )
+    }
+
+    if (showEditConfirmDialog) {
+        BpkpadConfirmDialog(
+            title = stringResource(R.string.title_save_changes),
+            message = stringResource(R.string.msg_save_changes_confirm),
+            confirmText = stringResource(R.string.btn_save),
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = {
+                viewModel.onEvent(RapidInputUiEvent.OnSaveArchiveUpdate)
+                showEditConfirmDialog = false
+            },
+            onDismiss = { showEditConfirmDialog = false }
+        )
+    }
+
+    if (uiState.showDuplicateWarning) {
+        BpkpadConfirmDialog(
+            title = stringResource(R.string.title_duplicate_warning),
+            message = stringResource(R.string.msg_duplicate_warning_confirm),
+            confirmText = stringResource(R.string.btn_keep_save),
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = {
+                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick(forceSave = true))
+                viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning)
+            },
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) }
+        )
+    }
+
+    uiState.successMessage?.let { msg ->
+        StatusDialog(
+            title = stringResource(R.string.title_success),
+            message = msg.asString(),
+            onDismiss = { 
+                val isUpload = uiState.isUploadSuccess
+                viewModel.onEvent(RapidInputUiEvent.DismissSuccess)
+                if (isUpload) onNavigateBack()
+            },
+            isSuccess = true
+        )
+    }
+
+    uiState.error?.let { msg ->
+        StatusDialog(
+            title = stringResource(R.string.title_error),
+            message = msg,
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissError) },
+            isSuccess = false
+        )
+    }
+
+    uiState.warningMessage?.let { msg ->
+        StatusDialog(
+            title = stringResource(R.string.title_warning),
+            message = msg.asString(),
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
+            isSuccess = null
+        )
+    }
+
+    if (showClassificationSheet) {
+        ClassificationBottomSheet(
+            uiState = uiState,
+            onSearchQueryChanged = { viewModel.onEvent(RapidInputUiEvent.OnSearchQueryChanged(it)) },
+            onQuickCategorySelected = { viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(it)) },
+            onCodeSelected = { code ->
+                viewModel.onEvent(RapidInputUiEvent.OnClassificationCodeChange(code))
+                scope.launch { 
+                    sheetState.hide() 
+                    showClassificationSheet = false
+                    viewModel.onEvent(RapidInputUiEvent.OnSearchQueryChanged(""))
+                    viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(null))
+                }
+            },
+            onDismiss = { 
+                showClassificationSheet = false 
+                viewModel.onEvent(RapidInputUiEvent.OnSearchQueryChanged(""))
+                viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(null))
+            },
+            sheetState = sheetState
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            BpkpadLogoScreenTopAppBar(
+                titleText = stringResource(R.string.title_input_box, uiState.boxContext.box),
+                onNavigationClick = onNavigateBack
+            )
+        },
+        floatingActionButton = {
+            if (userRole.canMutateArchive()) {
+                ScanFAB(onClick = onNavigateToScan)
+            }
+        },
+        bottomBar = {
+            RapidInputBottomBar(
+                stagedCount = uiState.stagedDocuments.size,
+                isLoading = uiState.isLoading,
+                onUploadClick = { 
+                    if (uiState.stagedDocuments.isNotEmpty()) {
+                        showUploadConfirmDialog = true
+                    }
+                },
+                onExitClick = onNavigateBack,
+                onNavigateToBottomNav = onNavigateToBottomNav,
+                userRole = userRole
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+        if (isLandscape) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(0.55f)
+                        .fillMaxHeight()
+                        .padding(start = 16.dp)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
+                    ) {
+                        item {
+                            RapidInputForm(
+                                uiState = uiState,
+                                onDocTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(it)) },
+                                onAutoBundleToggle = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) },
+                                onCopyTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(it)) },
+                                onCopyCountChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
+                                onDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
+                                onSpmDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
+                                onSubjectChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
+                                onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
+                                onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
+                                onConditionChange = { viewModel.onEvent(RapidInputUiEvent.OnConditionChange(it)) },
+                                onBundleSelected = { viewModel.onEvent(RapidInputUiEvent.OnBundleSelected(it)) },
+                                onClassificationClick = { showClassificationSheet = true },
+                                onAddOrUpdateClick = { 
+                                    if (uiState.editingId != null && sessionId.isEmpty()) {
+                                        showEditConfirmDialog = true
+                                    } else {
+                                        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                                    }
+                                },
+                                onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
+                            )
+                        }
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .weight(0.45f)
+                        .fillMaxHeight()
+                        .padding(end = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    StagingListHeader(count = uiState.stagedDocuments.size)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(uiState.stagedDocuments, key = { it.id }) { doc ->
+                            StagedItemRow(
+                                doc = doc,
+                                onDelete = { viewModel.onEvent(RapidInputUiEvent.OnDeleteStagedDoc(doc.id)) },
+                                onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) },
+                                userRole = userRole
+                            )
+                        }
+                        
+                        if (uiState.stagedDocuments.isEmpty()) {
+                            item { EmptyStagingState() }
+                        }
+                    }
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 0.dp),
+                contentPadding = PaddingValues(
+                    top = paddingValues.calculateTopPadding(),
+                    bottom = paddingValues.calculateBottomPadding() + 88.dp
+                )
+            ) {
+                item {
+                    RapidInputForm(
+                        uiState = uiState,
+                        onDocTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(it)) },
+                        onAutoBundleToggle = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) },
+                        onCopyTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(it)) },
+                        onCopyCountChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
+                        onDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
+                        onSpmDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
+                        onSubjectChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
+                        onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
+                        onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
+                        onConditionChange = { viewModel.onEvent(RapidInputUiEvent.OnConditionChange(it)) },
+                        onBundleSelected = { viewModel.onEvent(RapidInputUiEvent.OnBundleSelected(it)) },
+                        onClassificationClick = { showClassificationSheet = true },
+                        onAddOrUpdateClick = { 
+                            if (uiState.editingId != null && sessionId.isEmpty()) {
+                                showEditConfirmDialog = true
+                            } else {
+                                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                            }
+                        },
+                        onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
+                    )
+                }
+
+                item {
+                    StagingListHeader(count = uiState.stagedDocuments.size)
+                }
+
+                items(uiState.stagedDocuments, key = { it.id }) { doc ->
+                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        StagedItemRow(
+                            doc = doc,
+                            onDelete = { viewModel.onEvent(RapidInputUiEvent.OnDeleteStagedDoc(doc.id)) },
+                            onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) },
+                            userRole = userRole
+                        )
+                    }
+                }
+                
+                if (uiState.stagedDocuments.isEmpty()) {
+                    item { EmptyStagingState() }
+                }
+
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+            }
+        }
+    }
+}
+
+@Composable
+fun ScanFAB(onClick: () -> Unit) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        Icon(imageVector = Icons.Default.CameraAlt, contentDescription = "Scan Document")
+    }
+}
+
+@Composable
+fun RapidInputBottomBar(
+    stagedCount: Int,
+    isLoading: Boolean,
+    onUploadClick: () -> Unit,
+    onExitClick: () -> Unit,
+    onNavigateToBottomNav: (BottomNavItem) -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
+) {
+    Column {
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 8.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                if (stagedCount > 0 && userRole.canMutateArchive()) {
+                    Button(
+                        onClick = onUploadClick,
+                        enabled = !isLoading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(28.dp)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.btn_upload_docs, stagedCount), 
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                
+                OutlinedButton(
+                    onClick = onExitClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text(
+                        text = if (stagedCount == 0) stringResource(R.string.btn_finish_back) else stringResource(R.string.btn_finish_back),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+        com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
+            currentRoute = BottomNavItem.ADD.route,
+            userRole = userRole,
+            onNavigate = onNavigateToBottomNav
+        )
+    }
+}
+
+@Composable
+fun RapidInputForm(
+    uiState: RapidInputUiState,
+    onDocTypeChange: (String) -> Unit,
+    onAutoBundleToggle: (Boolean) -> Unit,
+    onCopyTypeChange: (DocCopyType) -> Unit,
+    onCopyCountChange: (String) -> Unit,
+    onDocNumberChange: (String) -> Unit,
+    onSpmDocNumberChange: (String) -> Unit,
+    onSubjectChange: (String) -> Unit,
+    onSpjDescriptionChange: (String) -> Unit,
+    onNominalChange: (String) -> Unit,
+    onConditionChange: (DocCondition) -> Unit,
+    onBundleSelected: (String?) -> Unit,
+    onClassificationClick: () -> Unit,
+    onAddOrUpdateClick: () -> Unit,
+    onCancelEditClick: () -> Unit
+) {
+    val focusManager = LocalFocusManager.current
+
+    Card(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = if (uiState.editingId != null) stringResource(R.string.title_edit_doc) else stringResource(R.string.title_add_doc),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FormEditableDropdownField(
+                label = stringResource(R.string.label_doc_type),
+                value = uiState.docType,
+                options = uiState.availableDocTypes.map { it.name },
+                onValueChange = onDocTypeChange,
+                onOptionSelected = onDocTypeChange,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ClassificationSelector(
+                code = uiState.classificationCode,
+                onClick = onClassificationClick
+            )
+
+            val normalizedType = normalizeDocumentType(uiState.docType)
+            if (uiState.editingId == null && (normalizedType == DocumentTypeDefaults.SP2D || normalizedType == DocumentTypeDefaults.SPM)) {
+                AutoBundleCheckbox(
+                    checked = uiState.isAutoBundleEnabled,
+                    onCheckedChange = onAutoBundleToggle
+                )
+            }
+
+            if (normalizedType == DocumentTypeDefaults.SPJ && !uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val bundleOptions = listOf(stringResource(R.string.label_none)) + uiState.stagedBundles.map { it.name }
+                val selectedBundle = uiState.stagedBundles.find { it.id == uiState.selectedBundleId }
+                val labelNone = stringResource(R.string.label_none)
+                FormDropdownField(
+                    label = stringResource(R.string.label_select_bundle_optional),
+                    value = selectedBundle?.name ?: labelNone,
+                    options = bundleOptions,
+                    onOptionSelected = {
+                        if (it == labelNone) onBundleSelected(null)
+                        else onBundleSelected(uiState.stagedBundles.find { b -> b.name == it }?.id)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            PhysicalStatusSelector(
+                copyType = uiState.copyType,
+                onCopyTypeChange = onCopyTypeChange
+            )
+
+            if (uiState.copyType == DocCopyType.COPY) {
+                FormTextField(
+                    label = stringResource(R.string.label_copy_count),
+                    value = uiState.copyCount,
+                    onValueChange = onCopyCountChange,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
+                    placeholder = stringResource(R.string.placeholder_copy_count),
+                    error = uiState.validationErrors["copyCount"]
+                )
+            }
+
+            if (normalizedType != DocumentTypeDefaults.SPJ || !uiState.isAutoBundleEnabled) {
+                FormTextField(
+                    label = if (uiState.isAutoBundleEnabled) stringResource(R.string.label_doc_number_sp2d) else stringResource(R.string.label_doc_number),
+                    value = uiState.documentNumber,
+                    onValueChange = onDocNumberChange,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                    placeholder = stringResource(R.string.placeholder_doc_number),
+                    error = uiState.validationErrors["docNumber"]
+                )
+            }
+            
+            if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                FormTextField(
+                    label = stringResource(R.string.label_doc_number_spm),
+                    value = uiState.spmDocumentNumber,
+                    onValueChange = onSpmDocNumberChange,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                    placeholder = stringResource(R.string.placeholder_spm_number),
+                    error = uiState.validationErrors["spmDocNumber"]
+                )
+            }
+            
+            FormTextField(
+                label = stringResource(R.string.label_description),
+                value = uiState.subject,
+                onValueChange = onSubjectChange,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                placeholder = stringResource(R.string.placeholder_subject),
+                error = uiState.validationErrors["subject"]
+            )
+
+            if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                FormTextField(
+                    label = stringResource(R.string.label_description_spj_optional),
+                    value = uiState.spjDescription,
+                    onValueChange = onSpjDescriptionChange,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                    placeholder = stringResource(R.string.placeholder_spj_desc),
+                    error = uiState.validationErrors["spjDescription"]
+                )
+            }
+            
+            FormTextField(
+                label = stringResource(R.string.label_nominal),
+                value = uiState.nominal,
+                onValueChange = onNominalChange,
+                readOnly = uiState.selectedBundleId != null && normalizedType == DocumentTypeDefaults.SPJ,
+                visualTransformation = CurrencyVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(onDone = { 
+                    focusManager.clearFocus()
+                    onAddOrUpdateClick()
+                }),
+                placeholder = stringResource(R.string.placeholder_nominal),
+                error = uiState.validationErrors["nominal"]
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = stringResource(R.string.label_doc_condition),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = uiState.condition == DocCondition.GOOD,
+                    onClick = { onConditionChange(DocCondition.GOOD) },
+                    label = { Text(stringResource(R.string.label_condition_good)) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = if (uiState.condition == DocCondition.GOOD) {
+                        { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null
+                )
+                FilterChip(
+                    selected = uiState.condition == DocCondition.DAMAGED,
+                    onClick = { onConditionChange(DocCondition.DAMAGED) },
+                    label = { Text(stringResource(R.string.label_condition_damaged)) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = if (uiState.condition == DocCondition.DAMAGED) {
+                        { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FormActionButtons(
+                isEditing = uiState.editingId != null,
+                onAddOrUpdateClick = onAddOrUpdateClick,
+                onCancelEditClick = onCancelEditClick
+            )
+            
+            uiState.error?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ClassificationSelector(code: String, onClick: () -> Unit) {
+    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+        Text(
+            text = stringResource(R.string.label_classification_code),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Box {
+            OutlinedTextField(
+                value = code,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = false,
+                shape = RoundedCornerShape(12.dp),
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.UnfoldMore,
+                        contentDescription = "Pilih Kode",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable { onClick() }
+            )
+        }
+    }
+}
+
+@Composable
+fun AutoBundleCheckbox(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+        Text(
+            text = stringResource(R.string.label_auto_bundle),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+fun PhysicalStatusSelector(copyType: DocCopyType, onCopyTypeChange: (DocCopyType) -> Unit) {
+    Text(
+        text = stringResource(R.string.label_physical_status), 
+        style = MaterialTheme.typography.labelMedium, 
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(vertical = 8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = copyType == DocCopyType.ORIGINAL,
+                onClick = { onCopyTypeChange(DocCopyType.ORIGINAL) }
+            )
+            Text(stringResource(R.string.label_asli), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = copyType == DocCopyType.COPY,
+                onClick = { onCopyTypeChange(DocCopyType.COPY) }
+            )
+            Text(stringResource(R.string.label_salinan), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
+@Composable
+fun FormActionButtons(isEditing: Boolean, onAddOrUpdateClick: () -> Unit, onCancelEditClick: () -> Unit) {
+    if (isEditing) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = onCancelEditClick,
+                modifier = Modifier.weight(1f).height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+            ) {
+                Text(stringResource(R.string.btn_cancel), fontWeight = FontWeight.Bold)
+            }
+            
+            Button(
+                onClick = onAddOrUpdateClick,
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Icon(Icons.Default.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.btn_update),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    } else {
+        Button(
+            onClick = onAddOrUpdateClick,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.btn_add_to_staging),
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun StagingListHeader(count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.label_staging_list, count),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+fun EmptyStagingState() {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(48.dp), 
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = null, 
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.msg_empty_staging), 
+                color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ClassificationBottomSheet(
+    uiState: RapidInputUiState,
+    onSearchQueryChanged: (String) -> Unit,
+    onQuickCategorySelected: (String?) -> Unit,
+    onCodeSelected: (String) -> Unit,
+    onDismiss: () -> Unit,
+    sheetState: SheetState
+) {
+    val filteredCodes = remember(
+        uiState.searchQuery, 
+        uiState.selectedQuickCategory, 
+        uiState.availableCodes
+    ) {
+        uiState.availableCodes.filter { code ->
+            val matchesCategory = uiState.selectedQuickCategory == null || 
+                    code.code.startsWith(uiState.selectedQuickCategory)
+            
+            val matchesSearch = code.code.contains(uiState.searchQuery, ignoreCase = true) ||
+                    code.name.contains(uiState.searchQuery, ignoreCase = true)
+            
+            matchesCategory && matchesSearch
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = {
+            BottomSheetDragHandle()
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f)
+                .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.title_select_classification),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ClassificationSearchBar(
+                    query = uiState.searchQuery,
+                    onQueryChanged = onSearchQueryChanged
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.label_quick_category),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Quick Category Section - Chunked Vertical Grid
+            val chunkedCategories = uiState.quickCategories.chunked(2)
+            items(chunkedCategories) { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowItems.forEach { category ->
+                        val isSelected = uiState.selectedQuickCategory == category.code
+                        QuickCategoryItem(
+                            category = category,
+                            isSelected = isSelected,
+                            onClick = { onQuickCategorySelected(if (isSelected) null else category.code) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (rowItems.size < 2) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(0.dp)) }
+
+            // Classification Results
+            if (uiState.isSyncingClassifications && uiState.availableCodes.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            } else if (filteredCodes.isEmpty()) {
+                item {
+                    EmptyClassificationResults()
+                }
+            } else {
+                items(filteredCodes, key = { it.code }) { classification ->
+                    ClassificationItem(
+                        classification = classification,
+                        onClick = { onCodeSelected(classification.code) }
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(24.dp)) }
+        }
+    }
+}
+
+@Composable
+fun BottomSheetDragHandle() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp, 4.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant, CircleShape)
+        )
+    }
+}
+
+@Composable
+fun QuickCategoryItem(
+    category: ClassificationCode,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .heightIn(min = 64.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) 
+                MaterialTheme.colorScheme.primaryContainer 
+            else 
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) 
+                MaterialTheme.colorScheme.primary 
+            else 
+                MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Surface(
+                color = if (isSelected) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text(
+                    text = category.code,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) 
+                        MaterialTheme.colorScheme.onPrimary 
+                    else 
+                        MaterialTheme.colorScheme.onSecondary
+                )
+            }
+            Text(
+                text = category.name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) 
+                    MaterialTheme.colorScheme.onPrimaryContainer 
+                else 
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+fun ClassificationSearchBar(query: String, onQueryChanged: (String) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChanged,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text(stringResource(R.string.search_classification_hint)) },
+        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+        )
+    )
+}
+
+@Composable
+fun EmptyClassificationResults() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.msg_no_classification_found),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun ClassificationItem(
+    classification: ClassificationCode,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = classification.code,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+                if (classification.parentCode != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.label_parent_code, classification.parentCode),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = classification.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+fun StagedItemRow(
+    doc: ArchiveDocument,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        ListItem(
+            headlineContent = { 
+                StagedItemHeadline(type = doc.type, number = doc.documentNumber)
+            },
+            supportingContent = { 
+                StagedItemSupporting(
+                    description = doc.description,
+                    copyType = doc.copyType.name,
+                    nominal = doc.nominal
+                )
+            },
+            trailingContent = {
+                if (userRole.canMutateArchive()) {
+                    StagedItemActions(onEdit = onEdit, onDelete = onDelete)
+                }
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        )
+    }
+}
+
+@Composable
+fun StagedItemHeadline(type: String, number: String?) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            color = MaterialTheme.colorScheme.primaryContainer,
+            shape = RoundedCornerShape(4.dp)
+        ) {
+            Text(
+                text = type,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = number ?: "-", 
+            fontWeight = FontWeight.Bold, 
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+fun StagedItemSupporting(description: String?, copyType: String, nominal: Double?) {
+    Column {
+        Text(
+            text = description ?: "-", 
+            maxLines = 1, 
+            fontSize = 12.sp, 
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        val copyLabel = if (copyType == "ORIGINAL") stringResource(R.string.label_asli) else stringResource(R.string.label_salinan)
+        Text(
+            text = "Status: $copyLabel | Nominal: Rp ${nominal?.toLong() ?: 0}",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+        )
+    }
+}
+
+@Composable
+fun StagedItemActions(onEdit: () -> Unit, onDelete: () -> Unit) {
+    Row {
+        IconButton(onClick = onEdit) {
+            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.btn_edit), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        }
+        IconButton(onClick = onDelete) {
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+        }
+    }
+}

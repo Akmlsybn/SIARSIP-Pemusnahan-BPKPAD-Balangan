@@ -93,8 +93,9 @@ fun BuatBerkasUsulMusnahScreen(
                 isLoading     = isLoading,
                 onBatal       = onBack,
                 onSimpan      = {
-                    if (perihal.isBlank()) {
-                        Toast.makeText(context, "Perihal tidak boleh kosong", Toast.LENGTH_SHORT).show()
+                    val perihalErr = com.bpkpad.siarsip.core.utils.PemusnahanInputRules.validatePerihal(perihal)
+                    if (perihalErr != null) {
+                        Toast.makeText(context, perihalErr, Toast.LENGTH_SHORT).show()
                     } else if (selectedIds.isEmpty()) {
                         Toast.makeText(context, "Pilih minimal 1 arsip", Toast.LENGTH_SHORT).show()
                     } else {
@@ -102,7 +103,7 @@ fun BuatBerkasUsulMusnahScreen(
                             tanggal = todayDate,
                             unitPengolah = "BPKPAD Balangan",
                             sumberModul = selectedModul,
-                            perihal = perihal,
+                            perihal = com.bpkpad.siarsip.core.utils.PemusnahanInputRules.sanitize(perihal),
                             archiveIds = selectedIds,
                             onSuccess = onSimpan
                         )

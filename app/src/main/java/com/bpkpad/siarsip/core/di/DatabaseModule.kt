@@ -62,6 +62,21 @@ object DatabaseModule {
     }
 
     @Provides
+    fun provideKeuanganArchiveDao(appDatabase: AppDatabase): com.example.arsipbpkpad.data.local.dao.ArchiveDao {
+        return appDatabase.keuanganArchiveDao()
+    }
+
+    @Provides
+    fun provideKeuanganClassificationCodeDao(appDatabase: AppDatabase): com.example.arsipbpkpad.data.local.dao.ClassificationCodeDao {
+        return appDatabase.keuanganClassificationCodeDao()
+    }
+
+    @Provides
+    fun provideKeuanganStagingArchiveDao(appDatabase: AppDatabase): com.example.arsipbpkpad.data.local.dao.StagingArchiveDao {
+        return appDatabase.keuanganStagingArchiveDao()
+    }
+
+    @Provides
     @Singleton
     fun provideSharedPreferences(
         @ApplicationContext context: Context
