@@ -3,29 +3,105 @@ package com.bpkpad.peminjaman.peminjaman.data.repository
 import com.bpkpad.peminjaman.core.common.ResultState
 import com.bpkpad.peminjaman.core.database.dao.MasterDokumenDao
 import com.bpkpad.peminjaman.core.database.entity.MasterDokumenEntity
+import com.bpkpad.peminjaman.peminjaman.data.mapper.toPeminjamanDomain
 import com.bpkpad.peminjaman.peminjaman.domain.model.MasterDokumen
 import com.bpkpad.peminjaman.peminjaman.domain.model.enums.DokumenStatus
 import com.bpkpad.peminjaman.peminjaman.domain.repository.MasterDokumenRepository
+import com.bpkpad.siarsip.core.database.dao.ArsipDao
+import com.bpkpad.siarsip.core.network.SupabaseSyncManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class MasterDokumenRepositoryImpl @Inject constructor(
-    private val dao: MasterDokumenDao
+    private val dao: MasterDokumenDao,
+    private val arsipDao: ArsipDao,
+    private val syncManager: SupabaseSyncManager
 ) : MasterDokumenRepository {
 
-    override fun getAll(): Flow<List<MasterDokumen>> {
-        return dao.getAll().map { list -> list.map { it.toDomain() } }
+    override fun getAll(): Flow<List<MasterDokumen>> = flow {
+        val items = try {
+            val remoteResult = syncManager.fetchArchivesRemotePaginated(
+                sumber = null,
+                status = null,
+                tahun = null,
+                query = null,
+                limit = 1000,
+                offset = 0
+            )
+
+            if (remoteResult.items.isNotEmpty()) {
+                remoteResult.items.map { it.toPeminjamanDomain() }
+            } else {
+                val roomItems = arsipDao.getArchivesFiltered(null, null, null, null, 1000, 0).first()
+                if (roomItems.isNotEmpty()) {
+                    roomItems.map { it.toPeminjamanDomain() }
+                } else {
+                    dao.getAll().first().map { it.toDomain() }
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            try {
+                dao.getAll().first().map { it.toDomain() }
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (ex: Exception) {
+                emptyList()
+            }
+        }
+        emit(items)
     }
 
-    override fun getAvailable(): Flow<List<MasterDokumen>> {
-        return dao.getAvailable().map { list -> list.map { it.toDomain() } }
+    override fun getAvailable(): Flow<List<MasterDokumen>> = flow {
+        val items = try {
+            val remoteResult = syncManager.fetchArchivesRemotePaginated(
+                sumber = null,
+                status = "AVAILABLE",
+                tahun = null,
+                query = null,
+                limit = 1000,
+                offset = 0
+            )
+
+            if (remoteResult.items.isNotEmpty()) {
+                remoteResult.items.map { it.toPeminjamanDomain() }
+            } else {
+                val roomItems = arsipDao.getArchivesFiltered(null, "AVAILABLE", null, null, 1000, 0).first()
+                if (roomItems.isNotEmpty()) {
+                    roomItems.map { it.toPeminjamanDomain() }
+                } else {
+                    dao.getAvailable().first().map { it.toDomain() }
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            try {
+                dao.getAvailable().first().map { it.toDomain() }
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (ex: Exception) {
+                emptyList()
+            }
+        }
+        emit(items)
     }
 
-    override suspend fun getById(id: Int): MasterDokumen? =
-        dao.getById(id)?.toDomain()
+    override suspend fun getById(id: Int): MasterDokumen? {
+        return try {
+            val roomItems = arsipDao.getArchivesFiltered(null, null, null, null, 2000, 0).first()
+            val foundEntity = roomItems.find { kotlin.math.abs(it.id.hashCode()) == id }
+            foundEntity?.toPeminjamanDomain() ?: dao.getById(id)?.toDomain()
+        } catch (e: Exception) {
+            dao.getById(id)?.toDomain()
+        }
+    }
 
     override suspend fun create(dokumen: MasterDokumen): ResultState<MasterDokumen> {
         return try {
@@ -55,8 +131,34 @@ class MasterDokumenRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun search(query: String): Flow<List<MasterDokumen>> {
-        return dao.search(query).map { list -> list.map { it.toDomain() } }
+    override fun search(query: String): Flow<List<MasterDokumen>> = flow {
+        val items = try {
+            val remoteResult = syncManager.fetchArchivesRemotePaginated(
+                sumber = null,
+                status = null,
+                tahun = null,
+                query = query,
+                limit = 1000,
+                offset = 0
+            )
+
+            if (remoteResult.items.isNotEmpty()) {
+                remoteResult.items.map { it.toPeminjamanDomain() }
+            } else {
+                dao.search(query).first().map { it.toDomain() }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            try {
+                dao.search(query).first().map { it.toDomain() }
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (ex: Exception) {
+                emptyList()
+            }
+        }
+        emit(items)
     }
 
     private fun MasterDokumenEntity.toDomain() = MasterDokumen(

@@ -16,8 +16,14 @@ interface BerkasUsulMusnahDao {
     @Query("SELECT * FROM proposals WHERE id = :id")
     fun getProposalById(id: String): Flow<BerkasUsulMusnahEntity?>
 
+    @Query("SELECT * FROM proposals WHERE nomorBerkas = :nomor")
+    fun getProposalByNomor(nomor: String): Flow<BerkasUsulMusnahEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProposal(proposal: BerkasUsulMusnahEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProposals(proposals: List<BerkasUsulMusnahEntity>)
 
     @Query("UPDATE proposals SET status = :status WHERE id = :id")
     suspend fun updateProposalStatus(id: String, status: String)

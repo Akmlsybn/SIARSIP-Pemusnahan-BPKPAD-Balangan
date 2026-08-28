@@ -6,7 +6,12 @@ import com.bpkpad.arsip.core.data.local.entity.toDomain
 import com.bpkpad.arsip.domain.model.ArchiveDocument
 import com.bpkpad.arsip.domain.repository.ArchiveRepository
 import com.bpkpad.arsip.utils.ResultState
+import com.bpkpad.siarsip.core.database.dao.ArsipDao
+import com.bpkpad.siarsip.core.network.SupabaseSyncManager
+import com.bpkpad.siarsip.feature.non_keuangan.data.mapper.toNonKeuanganDomain
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import java.util.UUID
 import javax.inject.Inject
@@ -14,7 +19,9 @@ import javax.inject.Singleton
 
 @Singleton
 class ArchiveRepositoryImpl @Inject constructor(
-    private val archiveDao: ArchiveDocumentDao
+    private val archiveDao: ArchiveDocumentDao,
+    private val arsipDao: ArsipDao,
+    private val syncManager: SupabaseSyncManager
 ) : ArchiveRepository {
 
     private val sampleArchives = listOf(
@@ -58,22 +65,61 @@ class ArchiveRepositoryImpl @Inject constructor(
 
     override fun getArchives(): Flow<ResultState<List<ArchiveDocument>>> = flow {
         emit(ResultState.Loading)
-        archiveDao.getAllDocuments().collect { entities ->
-            if (entities.isEmpty()) {
-                emit(ResultState.Success(sampleArchives))
+        val res = try {
+            val remoteResult = syncManager.fetchArchivesRemotePaginated(
+                sumber = "Non-Keuangan",
+                status = null,
+                tahun = null,
+                query = null,
+                limit = 1000,
+                offset = 0
+            )
+
+            val mapped = remoteResult.items.map { it.toNonKeuanganDomain() }
+            if (mapped.isNotEmpty()) {
+                ResultState.Success(mapped)
             } else {
-                emit(ResultState.Success(entities.map { it.toDomain() }))
+                val roomItems = arsipDao.getArchivesFiltered("Non-Keuangan", null, null, null, 1000, 0).first()
+                if (roomItems.isNotEmpty()) {
+                    ResultState.Success(roomItems.map { it.toNonKeuanganDomain() })
+                } else {
+                    val allRoomItems = arsipDao.getArchivesFiltered(null, null, null, null, 1000, 0).first()
+                    val nonSp2dItems = allRoomItems.filter { !it.deskripsi.contains("SP2D", ignoreCase = true) }
+                    if (nonSp2dItems.isNotEmpty()) {
+                        ResultState.Success(nonSp2dItems.map { it.toNonKeuanganDomain() })
+                    } else {
+                        ResultState.Success(sampleArchives)
+                    }
+                }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ResultState.Success(sampleArchives)
         }
+        emit(res)
     }
 
     override fun getArchiveById(id: String): Flow<ResultState<ArchiveDocument>> = flow {
         emit(ResultState.Loading)
-        archiveDao.getAllDocuments().collect { entities ->
-            val docFromDb = entities.find { it.id == id }?.toDomain()
-            val doc = docFromDb ?: sampleArchives.find { it.id == id } ?: sampleArchives.first()
-            emit(ResultState.Success(doc))
+        val res = try {
+            val roomItems = arsipDao.getArchivesFiltered(null, null, null, null, 2000, 0).first()
+            val entity = roomItems.find { it.id == id }
+            if (entity != null) {
+                ResultState.Success(entity.toNonKeuanganDomain())
+            } else {
+                val localEntities = archiveDao.getAllDocuments().first()
+                val docFromDb = localEntities.find { it.id == id }?.toDomain()
+                val doc = docFromDb ?: sampleArchives.find { it.id == id } ?: sampleArchives.first()
+                ResultState.Success(doc)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            val doc = sampleArchives.find { it.id == id } ?: sampleArchives.first()
+            ResultState.Success(doc)
         }
+        emit(res)
     }
 
     override fun saveArchive(document: ArchiveDocument): Flow<ResultState<Unit>> = flow {

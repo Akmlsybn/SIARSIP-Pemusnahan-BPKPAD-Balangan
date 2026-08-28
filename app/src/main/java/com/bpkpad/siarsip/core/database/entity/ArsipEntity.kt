@@ -1,9 +1,16 @@
 package com.bpkpad.siarsip.core.database.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "archives")
+@Entity(
+    tableName = "archives",
+    indices = [
+        Index(value = ["tahun"]),
+        Index(value = ["sumber", "status", "tahun"])
+    ]
+)
 data class ArsipEntity(
     @PrimaryKey
     val id: String, // UUID v4

@@ -28,5 +28,8 @@ interface BeritaAcaraDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBeritaAcara(beritaAcara: BeritaAcaraEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBeritaAcaraList(list: List<BeritaAcaraEntity>)
 }
 

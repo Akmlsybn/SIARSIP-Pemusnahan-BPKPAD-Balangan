@@ -72,11 +72,13 @@ class FormTransaksiViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _dokumenQuery.debounce(300).collect { q ->
+                val selected = _uiState.value.selectedDokumen.map { it.id }.toSet()
                 if (q.isBlank()) {
-                    _uiState.update { it.copy(dokumenSearchResults = emptyList()) }
+                    masterDokumenRepo.getAvailable().firstOrNull()?.let { list ->
+                        _uiState.update { it.copy(dokumenSearchResults = list.filter { d -> d.id !in selected && d.status.name == "TERSEDIA" }) }
+                    }
                 } else {
                     masterDokumenRepo.search(q).firstOrNull()?.let { list ->
-                        val selected = _uiState.value.selectedDokumen.map { it.id }.toSet()
                         _uiState.update { it.copy(dokumenSearchResults = list.filter { d -> d.id !in selected && d.status.name == "TERSEDIA" }) }
                     }
                 }

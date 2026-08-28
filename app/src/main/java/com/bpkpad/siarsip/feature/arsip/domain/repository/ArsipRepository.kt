@@ -6,9 +6,24 @@ import kotlinx.coroutines.flow.Flow
 interface ArsipRepository {
     fun getAllArchives(): Flow<List<Arsip>>
     fun getAvailableArchives(): Flow<List<Arsip>>
+    fun getArchivesFiltered(
+        sumber: String? = null,
+        status: String? = null,
+        tahun: String? = null,
+        query: String? = null,
+        limit: Int = 25,
+        offset: Int = 0
+    ): Flow<List<Arsip>>
+    fun countArchivesFiltered(
+        sumber: String? = null,
+        status: String? = null,
+        tahun: String? = null,
+        query: String? = null
+    ): Flow<Int>
     fun getArchivesByProposal(proposalId: String): Flow<List<Arsip>>
     fun getAllProposals(): Flow<List<BerkasUsulMusnah>>
     fun getProposalById(id: String): Flow<BerkasUsulMusnah?>
+    fun getProposalByNomor(nomor: String): Flow<BerkasUsulMusnah?>
     fun getAllBeritaAcara(): Flow<List<BeritaAcara>>
     fun getBeritaAcaraById(id: String): Flow<BeritaAcara?>
     fun getPenandatanganForBeritaAcara(beritaAcaraId: String): Flow<List<Penandatangan>>

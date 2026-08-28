@@ -4,13 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.lifecycleScope
 import com.bpkpad.siarsip.core.database.AppDatabase
 import com.bpkpad.siarsip.core.navigation.Screen
 import com.bpkpad.siarsip.core.navigation.SiArsipNavGraph
+import com.bpkpad.siarsip.core.network.SupabaseSyncManager
 import com.bpkpad.siarsip.feature.auth.domain.repository.AuthRepository
 import com.bpkpad.siarsip.ui.theme.SiARSIPTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,13 +25,17 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var authRepository: AuthRepository
 
+    @Inject
+    lateinit var supabaseSyncManager: SupabaseSyncManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Sementara: paksa Room membuat database agar terlihat di Database Inspector
-        CoroutineScope(Dispatchers.IO).launch {
+        // Trigger Online-First sync from Supabase to Room Database
+        lifecycleScope.launch(Dispatchers.IO) {
             appDatabase.userDao().countUsers()
+            supabaseSyncManager.syncAllData()
         }
 
         val isRemembered = authRepository.isRememberMe() && authRepository.getLoggedInUser() != null

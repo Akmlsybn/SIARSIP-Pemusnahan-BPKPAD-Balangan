@@ -10,16 +10,51 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ArsipDao {
 
-    @Query("SELECT * FROM archives ORDER BY tahun DESC")
+    @Query("SELECT * FROM archives ORDER BY id ASC LIMIT 200")
     fun getAllArchives(): Flow<List<ArsipEntity>>
 
-    @Query("SELECT * FROM archives WHERE status = 'AVAILABLE' AND nasibAkhir = 'MUSNAH' ORDER BY tahun DESC")
+    @Query("SELECT * FROM archives WHERE status = 'AVAILABLE' AND nasibAkhir = 'MUSNAH' ORDER BY id ASC LIMIT 200")
     fun getAvailableArchives(): Flow<List<ArsipEntity>>
 
-    @Query("SELECT * FROM archives WHERE proposalId = :proposalId ORDER BY tahun DESC")
+    @Query("SELECT * FROM archives WHERE (kode LIKE '%' || :query || '%' OR deskripsi LIKE '%' || :query || '%') ORDER BY id ASC LIMIT 200")
+    fun searchArchives(query: String): Flow<List<ArsipEntity>>
+
+    @Query("""
+        SELECT * FROM archives 
+        WHERE (:sumber IS NULL OR sumber = :sumber)
+          AND (:status IS NULL OR status = :status)
+          AND (:tahun IS NULL OR tahun = :tahun)
+          AND (:query IS NULL OR kode LIKE '%' || :query || '%' OR deskripsi LIKE '%' || :query || '%')
+        ORDER BY id ASC
+        LIMIT :limit OFFSET :offset
+    """)
+    fun getArchivesFiltered(
+        sumber: String?,
+        status: String?,
+        tahun: String?,
+        query: String?,
+        limit: Int,
+        offset: Int
+    ): Flow<List<ArsipEntity>>
+
+    @Query("""
+        SELECT COUNT(*) FROM archives 
+        WHERE (:sumber IS NULL OR sumber = :sumber)
+          AND (:status IS NULL OR status = :status)
+          AND (:tahun IS NULL OR tahun = :tahun)
+          AND (:query IS NULL OR kode LIKE '%' || :query || '%' OR deskripsi LIKE '%' || :query || '%')
+    """)
+    fun countArchivesFiltered(
+        sumber: String?,
+        status: String?,
+        tahun: String?,
+        query: String?
+    ): Flow<Int>
+
+    @Query("SELECT * FROM archives WHERE proposalId = :proposalId ORDER BY id ASC")
     fun getArchivesByProposal(proposalId: String): Flow<List<ArsipEntity>>
 
-    @Query("SELECT * FROM archives WHERE beritaAcaraId = :beritaAcaraId ORDER BY tahun DESC")
+    @Query("SELECT * FROM archives WHERE beritaAcaraId = :beritaAcaraId ORDER BY id ASC")
     fun getArchivesByBeritaAcara(beritaAcaraId: String): Flow<List<ArsipEntity>>
 
     @Query("UPDATE archives SET status = :status, proposalId = :proposalId WHERE id IN (:ids)")

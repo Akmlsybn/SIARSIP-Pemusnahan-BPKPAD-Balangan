@@ -42,7 +42,7 @@ import com.example.arsipbpkpad.data.local.converter.DatabaseConverters as Keuang
         StagingArchiveEntity::class,
         StagingBoxEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(KeuanganConverters::class)
