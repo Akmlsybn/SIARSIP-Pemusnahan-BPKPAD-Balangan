@@ -12,12 +12,17 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.bpkpad.siarsip.feature.auth.domain.repository.AuthRepository
+
 @HiltViewModel
 class DetailBerkasUsulMusnahViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getProposalByNomorUseCase: GetProposalByNomorUseCase,
-    private val removeArchiveFromProposalUseCase: RemoveArchiveFromProposalUseCase
+    private val removeArchiveFromProposalUseCase: RemoveArchiveFromProposalUseCase,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+
+    val isKasubbag: Boolean get() = authRepository.getLoggedInUser() == "kasubbag"
 
     val berkasNomor: String = savedStateHandle["berkasNomor"] ?: ""
 

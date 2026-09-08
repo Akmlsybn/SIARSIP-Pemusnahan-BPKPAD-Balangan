@@ -203,19 +203,19 @@ fun BuatBerkasUsulMusnahScreen(
                         OutlinedTextField(
                             value = pickerSearch,
                             onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text("Cari kode atau nama arsip...", fontSize = 12.sp, color = TextHint) },
-                            leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextHint, modifier = Modifier.size(18.dp)) },
+                            placeholder = { Text("Cari kode atau nama arsip...", fontSize = 13.sp, color = TextHint) },
+                            leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextHint, modifier = Modifier.size(20.dp)) },
                             trailingIcon = if (pickerSearch.isNotEmpty()) {
                                 {
                                     IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Filled.Close, null, tint = TextHint, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Filled.Close, null, tint = TextHint, modifier = Modifier.size(18.dp))
                                     }
                                 }
                             } else null,
                             singleLine = true,
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = fieldColors(),
-                            modifier = Modifier.fillMaxWidth().height(44.dp)
+                            modifier = Modifier.fillMaxWidth().height(52.dp)
                         )
 
                         // Filter TAHUN
@@ -775,6 +775,9 @@ private fun fieldColors(): TextFieldColors {
         focusedBorderColor = GreenPrimary,
         unfocusedBorderColor = BorderGray,
         focusedContainerColor = CardWhite,
-        unfocusedContainerColor = CardWhite
+        unfocusedContainerColor = CardWhite,
+        focusedTextColor = TextHead,
+        unfocusedTextColor = TextHead,
+        cursorColor = GreenPrimary
     )
 }

@@ -131,25 +131,27 @@ fun BeritaAcaraScreen(
                 BATopBar(onMenuClick = { scope.launch { drawerState.open() } })
             },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {
-                        signatoriesList.clear()
-                        signatoriesList.add(PenandatanganInputState(role = "PENANGGUNG_JAWAB", jabatan = "Penanggung Jawab"))
-                        signatoriesList.add(PenandatanganInputState(role = "SAKSI_1", jabatan = "Saksi 1"))
-                        nomorBa = ""
-                        tanggalEksekusi = ""
-                        keterangan = ""
-                        metode = "Pencacahan"
-                        selectedProposalId = ""
-                        viewModel.clearFotoUris()
-                        viewModel.resetCreateState()
-                        showCreateDialog = true
-                    },
-                    containerColor = GreenPrimary,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.Filled.Add, "Buat Berita Acara")
+                if (!viewModel.isKasubbag) {
+                    FloatingActionButton(
+                        onClick = {
+                            signatoriesList.clear()
+                            signatoriesList.add(PenandatanganInputState(role = "PENANGGUNG_JAWAB", jabatan = "Penanggung Jawab"))
+                            signatoriesList.add(PenandatanganInputState(role = "SAKSI_1", jabatan = "Saksi 1"))
+                            nomorBa = ""
+                            tanggalEksekusi = ""
+                            keterangan = ""
+                            metode = "Pencacahan"
+                            selectedProposalId = ""
+                            viewModel.clearFotoUris()
+                            viewModel.resetCreateState()
+                            showCreateDialog = true
+                        },
+                        containerColor = GreenPrimary,
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Filled.Add, "Buat Berita Acara")
+                    }
                 }
             }
         ) { padding ->
@@ -229,7 +231,7 @@ fun BeritaAcaraScreen(
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = baFieldColors(),
-                                modifier = Modifier.fillMaxWidth().height(48.dp)
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
                             )
                         }
 
@@ -312,7 +314,8 @@ fun BeritaAcaraScreen(
                         DropdownMenu(
                             expanded = proposalDropdownExpanded,
                             onDismissRequest = { proposalDropdownExpanded = false },
-                            modifier = Modifier.background(CardWhite)
+                            modifier = Modifier.background(CardWhite),
+                            containerColor = CardWhite
                         ) {
                             approvedProposals.forEach { prop ->
                                 DropdownMenuItem(
@@ -390,7 +393,8 @@ fun BeritaAcaraScreen(
                         DropdownMenu(
                             expanded = metodeDropdownExpanded,
                             onDismissRequest = { metodeDropdownExpanded = false },
-                            modifier = Modifier.background(CardWhite)
+                            modifier = Modifier.background(CardWhite),
+                            containerColor = CardWhite
                         ) {
                             val metodeOptions = listOf("Pencacahan", "Pembakaran", "Peleburan", "Pemusnahan Kimiawi")
                             metodeOptions.forEach { opt ->

@@ -212,7 +212,7 @@ fun LogRiwayatScreen(
                                 singleLine = true,
                                 shape      = RoundedCornerShape(12.dp),
                                 colors     = logFieldColors(),
-                                modifier   = Modifier.fillMaxWidth().height(48.dp)
+                                modifier   = Modifier.fillMaxWidth().height(52.dp)
                             )
                         }
 

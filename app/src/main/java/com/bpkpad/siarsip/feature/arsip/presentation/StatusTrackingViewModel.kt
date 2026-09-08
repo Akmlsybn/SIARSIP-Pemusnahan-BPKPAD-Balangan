@@ -12,12 +12,17 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.bpkpad.siarsip.feature.auth.domain.repository.AuthRepository
+
 @HiltViewModel
 class StatusTrackingViewModel @Inject constructor(
     private val getTrackingInfoUseCase: GetTrackingInfoUseCase,
     private val updateProposalStatusUseCase: UpdateProposalStatusUseCase,
-    private val deleteProposalUseCase: DeleteProposalUseCase
+    private val deleteProposalUseCase: DeleteProposalUseCase,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+
+    val isKasubbag: Boolean get() = authRepository.getLoggedInUser() == "kasubbag"
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()

@@ -84,6 +84,10 @@ class DaftarArsipViewModel @Inject constructor(
         _sumberFilter.value = sumber
     }
 
+    fun setStatusFilter(status: String) {
+        _statusFilter.value = status
+    }
+
     fun setTahunFilter(tahun: String) {
         _tahunFilter.value = tahun
     }

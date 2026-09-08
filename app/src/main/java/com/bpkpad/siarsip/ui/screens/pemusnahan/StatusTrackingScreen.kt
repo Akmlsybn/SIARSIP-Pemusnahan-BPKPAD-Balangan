@@ -259,7 +259,7 @@ fun StatusTrackingScreen(
                                             unfocusedTextColor = TextHead,
                                             cursorColor = GreenPrimary
                                         ),
-                                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                                        modifier = Modifier.fillMaxWidth().height(52.dp)
                                     )
                                 }
 
@@ -289,7 +289,8 @@ fun StatusTrackingScreen(
                                             expandedNomor = if (isExpanded) null else berkas.nomor
                                         },
                                         onCatatBalasan = { showUpdateDialogFor = berkas },
-                                        onRevisi       = { showRevisionConfirmFor = berkas }
+                                        onRevisi       = { showRevisionConfirmFor = berkas },
+                                        isKasubbag     = viewModel.isKasubbag
                                     )
                                 }
                             }
@@ -587,7 +588,8 @@ private fun TrackingCard(
     isExpanded: Boolean,
     onToggle: () -> Unit,
     onCatatBalasan: () -> Unit,
-    onRevisi: () -> Unit
+    onRevisi: () -> Unit,
+    isKasubbag: Boolean = false
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -766,7 +768,7 @@ private fun TrackingCard(
                     }
 
                     // Tombol catat balasan / revisi
-                    if (berkas.stages.any { it.status == StageStatus.ACTIVE }) {
+                    if (!isKasubbag && berkas.stages.any { it.status == StageStatus.ACTIVE }) {
                         Spacer(Modifier.height(8.dp))
                         if (berkas.status == "VERIFIED") {
                             Row(

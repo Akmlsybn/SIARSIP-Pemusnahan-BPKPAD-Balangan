@@ -142,6 +142,12 @@ class SupabaseSyncManager @Inject constructor(
         limit: Int,
         offset: Int
     ): PaginatedArchivesResult = withContext(Dispatchers.IO) {
+        val targetStatus = when (status) {
+            "Tersedia" -> "AVAILABLE"
+            "Usul Musnah" -> "PROPOSED"
+            "Dimusnahkan" -> "DISPOSED"
+            else -> status
+        }
         try {
             val result = supabase.from("archive_documents").select {
                 count(Count.EXACT)
@@ -149,8 +155,8 @@ class SupabaseSyncManager @Inject constructor(
                     if (!sumber.isNullOrBlank() && sumber != "Semua") {
                         eq("sumber", sumber)
                     }
-                    if (!status.isNullOrBlank() && status != "Semua") {
-                        eq("status", status)
+                    if (!targetStatus.isNullOrBlank() && targetStatus != "Semua" && targetStatus != "Semua Status") {
+                        eq("status", targetStatus)
                     }
                     if (!tahun.isNullOrBlank() && tahun != "Semua") {
                         eq("tahun", tahun)
@@ -200,7 +206,7 @@ class SupabaseSyncManager @Inject constructor(
             Log.w(TAG, "Failed fetching remote paginated archives, falling back to local Room DB: ${e.message}")
             val roomEntities = arsipDao.getArchivesFiltered(
                 sumber = if (sumber == "Semua") null else sumber,
-                status = if (status == "Semua") null else status,
+                status = if (targetStatus == "Semua" || targetStatus == "Semua Status") null else targetStatus,
                 tahun = if (tahun == "Semua") null else tahun,
                 query = query?.trim()?.takeIf { it.isNotBlank() },
                 limit = limit,
@@ -209,7 +215,7 @@ class SupabaseSyncManager @Inject constructor(
 
             val roomTotalCount = arsipDao.countArchivesFiltered(
                 sumber = if (sumber == "Semua") null else sumber,
-                status = if (status == "Semua") null else status,
+                status = if (targetStatus == "Semua" || targetStatus == "Semua Status") null else targetStatus,
                 tahun = if (tahun == "Semua") null else tahun,
                 query = query?.trim()?.takeIf { it.isNotBlank() }
             ).first()

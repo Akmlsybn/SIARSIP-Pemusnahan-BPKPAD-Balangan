@@ -43,6 +43,10 @@ fun DashboardScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.loadDashboardStats()
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -89,7 +93,7 @@ fun DashboardScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                GreetingCard()
+                GreetingCard(uiState)
                 QuickStatsGrid(uiState)
                 PemusnahanWorkflowSection(onNavigate)
                 Spacer(Modifier.height(8.dp))
@@ -122,7 +126,7 @@ private fun DashboardTopBar(onMenuClick: () -> Unit) {
 }
 
 @Composable
-private fun GreetingCard() {
+private fun GreetingCard(uiState: PemusnahanDashboardUiState) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -142,7 +146,7 @@ private fun GreetingCard() {
                     color = TextHint
                 )
                 Text(
-                    text = "Admin Arsip",
+                    text = uiState.userName,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = GreenPrimary
@@ -158,7 +162,7 @@ private fun GreetingCard() {
                             .padding(horizontal = 9.dp, vertical = 3.dp)
                     ) {
                         Text(
-                            text = "Tim Pemusnahan Arsip",
+                            text = uiState.userRole,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

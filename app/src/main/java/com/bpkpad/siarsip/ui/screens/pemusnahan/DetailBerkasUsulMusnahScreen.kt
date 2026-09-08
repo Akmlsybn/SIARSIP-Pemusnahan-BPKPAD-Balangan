@@ -163,7 +163,7 @@ fun DetailBerkasUsulMusnahScreen(
                     },
                     bottomBar = {
                         DetailBerkasBottomBar(
-                            showEditButton  = proposal.status == "PROPOSED",
+                            showEditButton  = proposal.status == "PROPOSED" && !viewModel.isKasubbag,
                             isEditMode      = isEditMode,
                             onEditModeToggle = { isEditMode = it }
                         )

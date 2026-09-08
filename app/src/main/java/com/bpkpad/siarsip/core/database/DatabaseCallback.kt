@@ -18,7 +18,7 @@ class DatabaseCallback : RoomDatabase.Callback() {
 
     private fun ensureDataSeeded(db: SupportSQLiteDatabase) {
         try {
-            val cursor = db.query("SELECT COUNT(*) FROM users WHERE username = 'admin'")
+            val cursor = db.query("SELECT COUNT(*) FROM users WHERE username = 'kasubbag'")
             var count = 0
             if (cursor.moveToFirst()) {
                 count = cursor.getInt(0)
@@ -34,8 +34,9 @@ class DatabaseCallback : RoomDatabase.Callback() {
     }
 
     private fun seedData(db: SupportSQLiteDatabase) {
-        // Seed default admin user if empty
+        // Seed default admin and kasubbag users if empty
         safeExec(db, "INSERT OR IGNORE INTO users (username, passwordHash) VALUES ('admin', '${sha256("admin123")}')")
+        safeExec(db, "INSERT OR IGNORE INTO users (username, passwordHash) VALUES ('kasubbag', '${sha256("kasubbag123")}')")
     }
 
     private fun safeExec(db: SupportSQLiteDatabase, sql: String) {

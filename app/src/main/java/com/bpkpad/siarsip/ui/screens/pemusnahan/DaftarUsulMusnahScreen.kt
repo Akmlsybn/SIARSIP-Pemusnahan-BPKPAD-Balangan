@@ -159,14 +159,16 @@ fun DaftarUsulMusnahScreen(
                 )
             },
             floatingActionButton = {
-                ExtendedFloatingActionButton(
-                    onClick        = onBuatBerkas,
-                    containerColor = GreenPrimary,
-                    contentColor   = Color.White,
-                    shape          = RoundedCornerShape(16.dp),
-                    icon           = { Icon(Icons.Filled.Add, null) },
-                    text           = { Text("Buat Berkas", fontWeight = FontWeight.Bold) }
-                )
+                if (!viewModel.isKasubbag) {
+                    ExtendedFloatingActionButton(
+                        onClick        = onBuatBerkas,
+                        containerColor = GreenPrimary,
+                        contentColor   = Color.White,
+                        shape          = RoundedCornerShape(16.dp),
+                        icon           = { Icon(Icons.Filled.Add, null) },
+                        text           = { Text("Buat Berkas", fontWeight = FontWeight.Bold) }
+                    )
+                }
             }
         ) { padding ->
             LazyColumn(
@@ -499,7 +501,7 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(52.dp)
     )
 }
 

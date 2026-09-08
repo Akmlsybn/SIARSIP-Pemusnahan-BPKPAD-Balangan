@@ -82,6 +82,7 @@ fun DaftarArsipScreen(
 
     val searchQuery by viewModel.searchQuery.collectAsState()
     val activeModul by viewModel.sumberFilter.collectAsState()
+    val activeStatus by viewModel.statusFilter.collectAsState()
     val activeYear by viewModel.tahunFilter.collectAsState()
 
     val archivesList = (archivesUiState as? ResultState.Success)?.data ?: emptyList()
@@ -98,6 +99,7 @@ fun DaftarArsipScreen(
     val scope = rememberCoroutineScope()
 
     val moduls = listOf("Semua", "Keuangan", "Non-Keuangan", "Peminjaman")
+    val statuses = listOf("Semua Status", "Tersedia", "Usul Musnah", "Dimusnahkan")
     val years = listOf("Semua", "2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015")
 
     val totalPages = if (totalCount == 0) 1 else (totalCount + pageSize - 1) / pageSize
@@ -163,30 +165,30 @@ fun DaftarArsipScreen(
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text("Cari kode atau nama arsip...", fontSize = 12.sp, color = TextHint) },
-                            leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextHint, modifier = Modifier.size(18.dp)) },
+                            placeholder = { Text("Cari kode atau nama arsip...", fontSize = 13.sp, color = TextHint) },
+                            leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextHint, modifier = Modifier.size(20.dp)) },
                             trailingIcon = if (searchQuery.isNotEmpty()) {
                                 {
                                     IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Filled.Close, null, tint = TextHint, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Filled.Close, null, tint = TextHint, modifier = Modifier.size(18.dp))
                                     }
                                 }
                             } else null,
                             singleLine = true,
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = fieldColors(),
-                            modifier = Modifier.weight(1f).height(44.dp)
+                            modifier = Modifier.weight(1f).height(52.dp)
                         )
 
                         // Tombol Atur Kolom
                         OutlinedButton(
                             onClick = { showColumnSheet = true },
-                            modifier = Modifier.height(44.dp),
-                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, BorderGray),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = if (visibleColumnKeys.size < defaultColumns.size) GreenLight else CardWhite,
-                                contentColor = if (visibleColumnKeys.size < defaultColumns.size) GreenPrimary else TextBody
+                                contentColor = if (visibleColumnKeys.size < defaultColumns.size) GreenPrimary else TextHead
                             ),
                             contentPadding = PaddingValues(horizontal = 10.dp)
                         ) {
@@ -198,12 +200,12 @@ fun DaftarArsipScreen(
                         // Tombol Filter Lanjutan
                         OutlinedButton(
                             onClick = { showFilterSheet = true },
-                            modifier = Modifier.height(44.dp),
-                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, BorderGray),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = if (advancedFilters.isNotEmpty()) GreenLight else CardWhite,
-                                contentColor = if (advancedFilters.isNotEmpty()) GreenPrimary else TextBody
+                                contentColor = if (advancedFilters.isNotEmpty()) GreenPrimary else TextHead
                             ),
                             contentPadding = PaddingValues(horizontal = 10.dp)
                         ) {
@@ -220,20 +222,81 @@ fun DaftarArsipScreen(
                         }
                     }
 
-                    // Row 2: Filter Modul (Sumber) & Filter Tahun
+                    // Row 2: Filter Modul (Sumber) & Filter Status Dropdown
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Filter Modul
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(moduls) { modul ->
-                                FilterPill(
-                                    label = modul,
-                                    isActive = activeModul == modul,
-                                    onClick = { viewModel.setSumberFilter(modul) }
-                                )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("MODUL:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextHint)
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                items(moduls) { modul ->
+                                    FilterPill(
+                                        label = modul,
+                                        isActive = activeModul == modul,
+                                        onClick = { viewModel.setSumberFilter(modul) }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Filter Status Dropdown
+                        var statusDropdownExpanded by remember { mutableStateOf(false) }
+                        val currentStatusDisplayLabel = when (activeStatus) {
+                            "AVAILABLE" -> "Tersedia"
+                            "PROPOSED" -> "Usul Musnah"
+                            "DISPOSED" -> "Dimusnahkan"
+                            "Semua" -> "Semua Status"
+                            else -> activeStatus.ifBlank { "Semua Status" }
+                        }
+
+                        Box {
+                            OutlinedButton(
+                                onClick = { statusDropdownExpanded = true },
+                                modifier = Modifier.height(32.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                border = BorderStroke(1.dp, if (activeStatus != "Semua" && activeStatus != "Semua Status") GreenPrimary else BorderGray),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = if (activeStatus != "Semua" && activeStatus != "Semua Status") GreenLight else CardWhite,
+                                    contentColor = if (activeStatus != "Semua" && activeStatus != "Semua Status") GreenPrimary else TextHead
+                                ),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+                            ) {
+                                Text(currentStatusDisplayLabel, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(4.dp))
+                                Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+
+                            DropdownMenu(
+                                expanded = statusDropdownExpanded,
+                                onDismissRequest = { statusDropdownExpanded = false },
+                                modifier = Modifier.background(CardWhite),
+                                containerColor = CardWhite
+                            ) {
+                                statuses.forEach { statusOption ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = statusOption,
+                                                fontSize = 12.sp,
+                                                fontWeight = if (currentStatusDisplayLabel == statusOption) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (currentStatusDisplayLabel == statusOption) GreenPrimary else TextHead
+                                            )
+                                        },
+                                        onClick = {
+                                            statusDropdownExpanded = false
+                                            val targetValue = when (statusOption) {
+                                                "Tersedia" -> "AVAILABLE"
+                                                "Usul Musnah" -> "PROPOSED"
+                                                "Dimusnahkan" -> "DISPOSED"
+                                                else -> "Semua Status"
+                                            }
+                                            viewModel.setStatusFilter(targetValue)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -604,7 +667,10 @@ private fun fieldColors(): TextFieldColors {
         focusedBorderColor = GreenPrimary,
         unfocusedBorderColor = BorderGray,
         focusedContainerColor = CardWhite,
-        unfocusedContainerColor = CardWhite
+        unfocusedContainerColor = CardWhite,
+        focusedTextColor = TextHead,
+        unfocusedTextColor = TextHead,
+        cursorColor = GreenPrimary
     )
 }
 
@@ -616,7 +682,11 @@ private fun ColumnSelectorSheet(
     onReset: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = CardWhite,
+        contentColor = TextHead
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -662,7 +732,11 @@ private fun FilterLanjutanSheet(
     onReset: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = CardWhite,
+        contentColor = TextHead
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

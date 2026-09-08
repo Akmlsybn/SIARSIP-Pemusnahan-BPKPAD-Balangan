@@ -14,12 +14,17 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.bpkpad.siarsip.feature.auth.domain.repository.AuthRepository
+
 @HiltViewModel
 class BeritaAcaraViewModel @Inject constructor(
     private val getBeritaAcaraUseCase: GetBeritaAcaraUseCase,
     private val createBeritaAcaraUseCase: CreateBeritaAcaraUseCase,
-    private val repository: ArsipRepository
+    private val repository: ArsipRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+
+    val isKasubbag: Boolean get() = authRepository.getLoggedInUser() == "kasubbag"
 
     val uiState: StateFlow<ResultState<List<BeritaAcaraItem>>> = getBeritaAcaraUseCase()
         .map { items ->

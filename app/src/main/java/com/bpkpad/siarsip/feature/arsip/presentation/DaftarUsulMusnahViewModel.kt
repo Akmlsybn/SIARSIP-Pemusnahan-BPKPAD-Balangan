@@ -9,10 +9,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
+import com.bpkpad.siarsip.feature.auth.domain.repository.AuthRepository
+
 @HiltViewModel
 class DaftarUsulMusnahViewModel @Inject constructor(
-    private val getProposalsUseCase: GetProposalsUseCase
+    private val getProposalsUseCase: GetProposalsUseCase,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+
+    val isKasubbag: Boolean get() = authRepository.getLoggedInUser() == "kasubbag"
 
     val uiState: StateFlow<ResultState<List<BerkasUsulMusnah>>> = getProposalsUseCase()
         .map { proposals ->
