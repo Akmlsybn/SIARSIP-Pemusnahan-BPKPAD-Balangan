@@ -65,6 +65,29 @@ data class SupabaseBeritaAcaraDto(
     @SerialName("foto_dokumentasi_uri") val fotoDokumentasiUri: String? = null
 )
 
+@Serializable
+data class SupabaseUpdateArchiveProposalDto(
+    val status: String,
+    @SerialName("proposal_id") val proposalId: String? = null
+)
+
+@Serializable
+data class SupabaseDisposeArchiveDto(
+    val status: String,
+    @SerialName("berita_acara_id") val beritaAcaraId: String? = null,
+    @SerialName("disposed_at") val disposedAt: String? = null
+)
+
+@Serializable
+data class SupabaseUpdateProposalStatusDto(
+    val status: String,
+    @SerialName("surat_pertimbangan_nomor") val suratPertimbanganNomor: String? = null,
+    @SerialName("surat_pertimbangan_perihal") val suratPertimbanganPerihal: String? = null,
+    @SerialName("jenis_persetujuan_akhir") val jenisPersetujuanAkhir: String? = null,
+    @SerialName("nomor_persetujuan_akhir") val nomorPersetujuanAkhir: String? = null,
+    @SerialName("perihal_persetujuan_akhir") val perihalPersetujuanAkhir: String? = null
+)
+
 data class PaginatedArchivesResult(
     val items: List<ArsipEntity>,
     val totalCount: Int
@@ -313,6 +336,111 @@ class SupabaseSyncManager @Inject constructor(
             supabase.from("berita_acara").insert(dto)
         } catch (e: Exception) {
             Log.e(TAG, "Failed pushing berita acara to cloud: ${e.message}")
+        }
+    }
+
+    suspend fun updateArchivesStatusInCloud(
+        archiveIds: List<String>,
+        status: String,
+        proposalId: String?
+    ) = withContext(Dispatchers.IO) {
+        if (archiveIds.isEmpty()) return@withContext
+        try {
+            val dto = SupabaseUpdateArchiveProposalDto(status = status, proposalId = proposalId)
+            archiveIds.chunked(100).forEach { chunk ->
+                supabase.from("archive_documents").update(dto) {
+                    filter {
+                        isIn("id", chunk)
+                    }
+                }
+            }
+            Log.d(TAG, "Successfully updated status=$status for ${archiveIds.size} archives in Supabase cloud.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed updating archive status in cloud: ${e.message}")
+        }
+    }
+
+    suspend fun updateArchivesStatusByProposalInCloud(
+        proposalId: String,
+        status: String
+    ) = withContext(Dispatchers.IO) {
+        try {
+            val dto = SupabaseUpdateArchiveProposalDto(status = status, proposalId = proposalId)
+            supabase.from("archive_documents").update(dto) {
+                filter {
+                    eq("proposal_id", proposalId)
+                }
+            }
+            Log.d(TAG, "Successfully updated status=$status for proposal $proposalId in Supabase cloud.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed updating archive status by proposal in cloud: ${e.message}")
+        }
+    }
+
+    suspend fun disposeArchivesInCloud(
+        archiveIds: List<String>,
+        beritaAcaraId: String,
+        disposedAt: String
+    ) = withContext(Dispatchers.IO) {
+        if (archiveIds.isEmpty()) return@withContext
+        try {
+            val dto = SupabaseDisposeArchiveDto(
+                status = "DISPOSED",
+                beritaAcaraId = beritaAcaraId,
+                disposedAt = disposedAt
+            )
+            archiveIds.chunked(100).forEach { chunk ->
+                supabase.from("archive_documents").update(dto) {
+                    filter {
+                        isIn("id", chunk)
+                    }
+                }
+            }
+            Log.d(TAG, "Successfully disposed ${archiveIds.size} archives in Supabase cloud.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed disposing archives in cloud: ${e.message}")
+        }
+    }
+
+    suspend fun updateProposalStatusInCloud(
+        proposalId: String,
+        status: String,
+        pertimbanganNo: String? = null,
+        pertimbanganPerihal: String? = null,
+        jenisPersetujuan: String? = null,
+        noPersetujuan: String? = null,
+        perihalPersetujuan: String? = null
+    ) = withContext(Dispatchers.IO) {
+        try {
+            val dto = SupabaseUpdateProposalStatusDto(
+                status = status,
+                suratPertimbanganNomor = pertimbanganNo,
+                suratPertimbanganPerihal = pertimbanganPerihal,
+                jenisPersetujuanAkhir = jenisPersetujuan,
+                nomorPersetujuanAkhir = noPersetujuan,
+                perihalPersetujuanAkhir = perihalPersetujuan
+            )
+            supabase.from("proposals").update(dto) {
+                filter {
+                    eq("id", proposalId)
+                }
+            }
+            Log.d(TAG, "Successfully updated proposal $proposalId status to $status in cloud.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed updating proposal status in cloud: ${e.message}")
+        }
+    }
+
+    suspend fun deleteProposalFromCloud(proposalId: String) = withContext(Dispatchers.IO) {
+        try {
+            supabase.from("proposals").delete {
+                filter {
+                    eq("id", proposalId)
+                }
+            }
+            Log.d(TAG, "Successfully deleted proposal $proposalId from cloud.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed deleting proposal from cloud: ${e.message}")
         }
     }
 }

@@ -163,6 +163,7 @@ class ArsipRepositoryImpl @Inject constructor(
                 }
             }
             supabaseSyncManager.pushProposalToCloud(entity)
+            supabaseSyncManager.updateArchivesStatusInCloud(archiveIds, "PROPOSED", proposal.id)
         }
     }
 
@@ -198,6 +199,16 @@ class ArsipRepositoryImpl @Inject constructor(
                     auditLogDao.insertAuditLog(log.toEntity())
                 }
             }
+            supabaseSyncManager.updateProposalStatusInCloud(
+                proposalId = proposalId,
+                status = status,
+                pertimbanganNo = suratPertimbanganNomor,
+                pertimbanganPerihal = suratPertimbanganPerihal,
+                jenisPersetujuan = jenisPersetujuanAkhir,
+                noPersetujuan = nomorPersetujuanAkhir,
+                perihalPersetujuan = perihalPersetujuanAkhir
+            )
+            supabaseSyncManager.updateArchivesStatusByProposalInCloud(proposalId, status)
         }
     }
 
@@ -213,6 +224,7 @@ class ArsipRepositoryImpl @Inject constructor(
             val disposedAtStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())
             arsipDao.disposeArchives(archiveIds, "DISPOSED", beritaAcara.id, disposedAtStr)
             supabaseSyncManager.pushBeritaAcaraToCloud(baEntity)
+            supabaseSyncManager.disposeArchivesInCloud(archiveIds, beritaAcara.id, disposedAtStr)
         }
     }
 
@@ -224,9 +236,11 @@ class ArsipRepositoryImpl @Inject constructor(
 
     override suspend fun deleteProposal(proposalId: String, auditLogs: List<AuditLog>) {
         withContext(Dispatchers.IO) {
+            var archiveIdsToReset: List<String> = emptyList()
             appDatabase.withTransaction {
                 val archives = arsipDao.getArchivesByProposal(proposalId).first()
                 val archiveIds = archives.map { it.id }
+                archiveIdsToReset = archiveIds
                 if (archiveIds.isNotEmpty()) {
                     arsipDao.updateArchivesProposal(archiveIds, "AVAILABLE", null)
                 }
@@ -234,6 +248,10 @@ class ArsipRepositoryImpl @Inject constructor(
                 for (log in auditLogs) {
                     auditLogDao.insertAuditLog(log.toEntity())
                 }
+            }
+            supabaseSyncManager.deleteProposalFromCloud(proposalId)
+            if (archiveIdsToReset.isNotEmpty()) {
+                supabaseSyncManager.updateArchivesStatusInCloud(archiveIdsToReset, "AVAILABLE", null)
             }
         }
     }
@@ -244,6 +262,7 @@ class ArsipRepositoryImpl @Inject constructor(
                 arsipDao.updateArchivesProposal(listOf(archiveId), "AVAILABLE", null)
                 auditLogDao.insertAuditLog(auditLog.toEntity())
             }
+            supabaseSyncManager.updateArchivesStatusInCloud(listOf(archiveId), "AVAILABLE", null)
         }
     }
 }

@@ -236,7 +236,7 @@ fun BuatBerkasUsulMusnahScreen(
                         }
                     }
 
-                    // Count bar
+                    // Count bar & Select All Button
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -245,11 +245,56 @@ fun BuatBerkasUsulMusnahScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "Menampilkan ${availableList.size} dari total $totalCount arsip tersedia",
+                            "Menampilkan ${availableList.size} dari total $totalCount arsip",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = TextBody
+                            color = TextBody,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
+
+                        if (pickerYear != "Semua" && availableList.isNotEmpty()) {
+                            val isAllCurrentSelected = availableList.all { it.id in selectedIds }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isAllCurrentSelected) GreenLight else Color(0xFFF1F8F5),
+                                border = BorderStroke(1.dp, if (isAllCurrentSelected) GreenPrimary else GreenMid),
+                                modifier = Modifier
+                                    .clickable {
+                                        if (isAllCurrentSelected) {
+                                            availableList.forEach { item ->
+                                                selectedIds.remove(item.id)
+                                                selectedArchivesMap.remove(item.id)
+                                            }
+                                        } else {
+                                            availableList.forEach { item ->
+                                                if (item.id !in selectedIds) {
+                                                    selectedIds.add(item.id)
+                                                    selectedArchivesMap[item.id] = item
+                                                }
+                                            }
+                                        }
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isAllCurrentSelected) Icons.Filled.CheckCircle else Icons.Filled.SelectAll,
+                                        contentDescription = null,
+                                        tint = GreenPrimary,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Text(
+                                        text = if (isAllCurrentSelected) "Batal Pilih (Tahun $pickerYear)" else "Select All (Arsip Tahun $pickerYear)",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GreenPrimary
+                                    )
+                                }
+                            }
+                        }
                     }
                     HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
 
