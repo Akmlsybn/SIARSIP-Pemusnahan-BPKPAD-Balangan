@@ -1,5 +1,6 @@
 package com.bpkpad.siarsip.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,9 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bpkpad.siarsip.R
 import com.bpkpad.siarsip.core.navigation.Screen
 import com.bpkpad.siarsip.ui.theme.*
 
@@ -218,6 +222,23 @@ private fun DrawerHeroHeader() {
             .background(GreenPrimary)
             .padding(start = 18.dp, end = 18.dp, top = 32.dp, bottom = 20.dp)
     ) {
+        // Logo Instansi di sudut kanan atas header drawer
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(46.dp)
+                .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(12.dp))
+                .padding(6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo_balangan),
+                contentDescription = "Logo Kabupaten Balangan",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        }
+
         Column {
             // Avatar
             Box(

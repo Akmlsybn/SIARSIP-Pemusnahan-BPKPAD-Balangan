@@ -56,15 +56,17 @@ object PdfExportManager {
             isAntiAlias = true
         }
 
-        // 1. Gambar Logo Instansi (Mipmap ic_launcher sebagai placeholder)
+        // 1. Gambar Logo Instansi Resmi Kabupaten Balangan
         try {
-            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
+            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.logo_balangan)
+                ?: BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
             if (logoBitmap != null) {
-                val logoSize = 48f
+                val logoWidth = 44f
+                val logoHeight = (logoBitmap.height.toFloat() / logoBitmap.width.toFloat()) * logoWidth
                 val logoX = 54f
                 val logoY = 54f
                 val srcRect = Rect(0, 0, logoBitmap.width, logoBitmap.height)
-                val destRect = RectF(logoX, logoY, logoX + logoSize, logoY + logoSize)
+                val destRect = RectF(logoX, logoY, logoX + logoWidth, logoY + logoHeight)
                 canvas.drawBitmap(logoBitmap, srcRect, destRect, paint)
             }
         } catch (e: Exception) {

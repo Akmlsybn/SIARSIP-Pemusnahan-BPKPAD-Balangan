@@ -1,5 +1,6 @@
 package com.bpkpad.siarsip.ui.screens.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -21,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bpkpad.siarsip.R
 import com.bpkpad.siarsip.ui.theme.*
 
 @Composable
@@ -56,19 +60,25 @@ fun LoginScreen(
             // Logo
             Box(
                 modifier = Modifier
-                    .size(96.dp)
+                    .size(108.dp)
                     .background(
-                        GreenPrimary.copy(alpha = 0.1f),
-                        RoundedCornerShape(48.dp)
+                        Color.White,
+                        RoundedCornerShape(54.dp)
                     )
                     .border(
                         2.dp,
-                        GreenPrimary.copy(alpha = 0.3f),
-                        RoundedCornerShape(48.dp)
-                    ),
+                        GreenPrimary.copy(alpha = 0.25f),
+                        RoundedCornerShape(54.dp)
+                    )
+                    .padding(14.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("🏛️", fontSize = 40.sp)
+                Image(
+                    painter = painterResource(id = R.drawable.logo_balangan),
+                    contentDescription = "Logo Kabupaten Balangan",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
             }
 
             Spacer(Modifier.height(20.dp))

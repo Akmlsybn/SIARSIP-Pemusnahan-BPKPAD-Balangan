@@ -8,7 +8,7 @@ import java.util.UUID
 import javax.inject.Inject
 
 class CreateProposalUseCase @Inject constructor(
-    
+
     private val repository: ArsipRepository
 ) {
     suspend operator fun invoke(

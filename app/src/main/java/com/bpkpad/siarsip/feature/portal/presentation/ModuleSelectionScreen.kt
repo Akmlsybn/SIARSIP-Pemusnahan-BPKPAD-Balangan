@@ -3,6 +3,8 @@ package com.bpkpad.siarsip.feature.portal.presentation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,10 +27,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bpkpad.siarsip.R
 import com.bpkpad.siarsip.core.navigation.Screen
 
 data class ModuleCardItem(
@@ -123,48 +128,72 @@ fun ModuleSelectionScreen(
                 .padding(horizontal = 20.dp)
         ) {
             // Header Info
-            Column(modifier = Modifier.padding(bottom = 24.dp)) {
-                Surface(
-                    color = Color(0xFF1E293B),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.padding(bottom = 12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Surface(
+                        color = Color(0xFF1E293B),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.padding(bottom = 12.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF22C55E))
-                        )
-                        Text(
-                            text = "PORTAL UTAMA SIARSIP",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF94A3B8)
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF22C55E))
+                            )
+                            Text(
+                                text = "PORTAL UTAMA SIARSIP",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
                     }
+
+                    Text(
+                        text = "Selamat Datang,",
+                        fontSize = 16.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Text(
+                        text = userName,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = userRole,
+                        fontSize = 13.sp,
+                        color = Color(0xFF64748B)
+                    )
                 }
 
-                Text(
-                    text = "Selamat Datang,",
-                    fontSize = 16.sp,
-                    color = Color(0xFF94A3B8)
-                )
-                Text(
-                    text = userName,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = userRole,
-                    fontSize = 13.sp,
-                    color = Color(0xFF64748B)
-                )
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.08f),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                    modifier = Modifier.padding(start = 12.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo_balangan),
+                        contentDescription = "Logo Kabupaten Balangan",
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .size(54.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
 
             Text(
