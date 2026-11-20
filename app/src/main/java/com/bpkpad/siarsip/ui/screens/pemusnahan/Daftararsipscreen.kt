@@ -123,7 +123,7 @@ fun DaftarArsipScreen(
                     },
                     onLogout = {
                         scope.launch { drawerState.close() }
-                        onNavigate("login")
+                        onNavigate("logout")
                     }
                 )
             }

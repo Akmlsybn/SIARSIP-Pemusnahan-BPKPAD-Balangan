@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -133,15 +132,6 @@ fun PemusnahanDrawerContent(
         )
     )
 
-    val quickSwitchItems = listOf(
-        DrawerItem(
-            route       = Screen.KeuanganHome.route,
-            name        = "Arsip Keuangan",
-            description = "Pindah cepat ke Modul Keuangan",
-            icon        = Icons.Filled.AccountBalanceWallet
-        )
-    )
-
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -168,16 +158,6 @@ fun PemusnahanDrawerContent(
             Spacer(modifier = Modifier.height(8.dp))
             DrawerSectionLabel("MENU UTAMA")
             menuItems.forEach { item ->
-                DrawerMenuItem(
-                    item        = item,
-                    isActive    = currentRoute == item.route,
-                    onNavigate  = onNavigate
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            DrawerSectionLabel("PINTAS MODUL (QUICK SWITCH)")
-            quickSwitchItems.forEach { item ->
                 DrawerMenuItem(
                     item        = item,
                     isActive    = currentRoute == item.route,
@@ -345,10 +325,7 @@ private fun DrawerMenuItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(bgColor)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication        = null
-            ) { onNavigate(item.route) }
+            .clickable { onNavigate(item.route) }
             .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

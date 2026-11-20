@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val isRemembered = authRepository.isRememberMe() && authRepository.getLoggedInUser() != null
-        val startDestination = if (isRemembered) Screen.Dashboard.route else Screen.Login.route
+        val startDestination = if (isRemembered) Screen.ModuleSelection.route else Screen.Login.route
 
         setContent {
             SiARSIPTheme {

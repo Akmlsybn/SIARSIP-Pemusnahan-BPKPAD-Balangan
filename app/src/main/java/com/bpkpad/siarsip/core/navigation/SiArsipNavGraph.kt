@@ -27,6 +27,7 @@ import com.bpkpad.siarsip.ui.screens.pemusnahan.DetailBeritaAcaraScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.DetailBerkasUsulMusnahScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.LogRiwayatScreen
 import com.bpkpad.siarsip.ui.screens.pemusnahan.StatusTrackingScreen
+import com.bpkpad.siarsip.ui.components.DrawerRoutes
 import com.bpkpad.siarsip.ui.screens.profile.ProfileScreen
 import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
@@ -40,10 +41,22 @@ fun NavHostController.navigateToRoute(route: String, onLogout: () -> Unit = {}) 
     if (currentDestination?.route == route) return
 
     when (route) {
-        "logout" -> {
+        "logout", "login" -> {
             onLogout()
             navigate(Screen.Login.route) {
                 popUpTo(0) { inclusive = true }
+            }
+        }
+        Screen.ModuleSelection.route, DrawerRoutes.MODULE_SELECTION -> {
+            // Selalu kembali ke Portal Hub (Module Selection Screen dengan 4 modul)
+            val popped = popBackStack(Screen.ModuleSelection.route, inclusive = false)
+            if (!popped) {
+                navigate(Screen.ModuleSelection.route) {
+                    popUpTo(graph.startDestinationId) {
+                        saveState = false
+                    }
+                    launchSingleTop = true
+                }
             }
         }
         else -> navigate(route) {
