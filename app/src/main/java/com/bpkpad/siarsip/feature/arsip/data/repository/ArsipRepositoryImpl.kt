@@ -48,7 +48,8 @@ class ArsipRepositoryImpl @Inject constructor(
         tahun: String?,
         query: String?,
         limit: Int,
-        offset: Int
+        offset: Int,
+        onlyEligibleForDisposal: Boolean
     ): Flow<List<Arsip>> {
         return flow {
             val result = supabaseSyncManager.fetchArchivesRemotePaginated(
@@ -57,7 +58,8 @@ class ArsipRepositoryImpl @Inject constructor(
                 tahun = tahun,
                 query = query,
                 limit = limit,
-                offset = offset
+                offset = offset,
+                onlyEligibleForDisposal = onlyEligibleForDisposal
             )
             emit(result.items.map { it.toDomain() })
         }.flowOn(Dispatchers.IO)
@@ -67,7 +69,8 @@ class ArsipRepositoryImpl @Inject constructor(
         sumber: String?,
         status: String?,
         tahun: String?,
-        query: String?
+        query: String?,
+        onlyEligibleForDisposal: Boolean
     ): Flow<Int> {
         return flow {
             val result = supabaseSyncManager.fetchArchivesRemotePaginated(
@@ -76,10 +79,17 @@ class ArsipRepositoryImpl @Inject constructor(
                 tahun = tahun,
                 query = query,
                 limit = 1,
-                offset = 0
+                offset = 0,
+                onlyEligibleForDisposal = onlyEligibleForDisposal
             )
             emit(result.totalCount)
         }.flowOn(Dispatchers.IO)
+    }
+
+    override suspend fun getArchivesByIds(ids: List<String>): List<Arsip> {
+        return withContext(Dispatchers.IO) {
+            arsipDao.getArchivesByIds(ids).map { it.toDomain() }
+        }
     }
 
     override fun getArchivesByProposal(proposalId: String): Flow<List<Arsip>> {

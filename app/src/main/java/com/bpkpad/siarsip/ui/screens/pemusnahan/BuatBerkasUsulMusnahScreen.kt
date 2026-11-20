@@ -60,7 +60,25 @@ fun BuatBerkasUsulMusnahScreen(
     val selectedArchivesMap = remember { mutableStateMapOf<String, Arsip>() }
 
     val modulList = listOf("Keuangan", "Non-Keuangan", "Peminjaman")
-    val pickerYears = listOf("Semua", "2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015")
+    val pickerYears = remember(selectedModul) {
+        val cutoffYear = if (selectedModul == "Keuangan") {
+            com.bpkpad.siarsip.core.utils.JraRules.getCutoffYearKeuangan()
+        } else {
+            com.bpkpad.siarsip.core.utils.JraRules.getCutoffYearNonKeuangan()
+        }
+        val minYear = 2015
+        val list = mutableListOf("Semua")
+        for (y in cutoffYear downTo minYear) {
+            list.add(y.toString())
+        }
+        list
+    }
+
+    LaunchedEffect(selectedModul) {
+        if (pickerYear != "Semua" && pickerYear !in pickerYears) {
+            viewModel.setTahunFilter("Semua")
+        }
+    }
 
     val totalPages = if (totalCount == 0) 1 else (totalCount + pageSize - 1) / pageSize
     val selectedItems = selectedArchivesMap.values.toList()

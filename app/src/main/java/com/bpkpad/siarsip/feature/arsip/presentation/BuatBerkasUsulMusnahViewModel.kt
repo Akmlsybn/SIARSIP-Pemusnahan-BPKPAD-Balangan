@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bpkpad.siarsip.core.utils.ResultState
 import com.bpkpad.siarsip.feature.arsip.domain.model.Arsip
-import com.bpkpad.siarsip.feature.arsip.domain.repository.ArsipRepository
 import com.bpkpad.siarsip.feature.arsip.domain.usecase.CreateProposalUseCase
+import com.bpkpad.siarsip.feature.arsip.domain.usecase.GetAvailableArchivesUseCase
 import com.bpkpad.siarsip.feature.arsip.domain.usecase.GetProposalsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,7 +17,7 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class BuatBerkasUsulMusnahViewModel @Inject constructor(
-    private val repository: ArsipRepository,
+    private val getAvailableArchivesUseCase: GetAvailableArchivesUseCase,
     private val getProposalsUseCase: GetProposalsUseCase,
     private val createProposalUseCase: CreateProposalUseCase
 ) : ViewModel() {
@@ -54,9 +54,8 @@ class BuatBerkasUsulMusnahViewModel @Inject constructor(
         _tahunFilter,
         _searchQuery
     ) { sumber, tahun, query ->
-        repository.countArchivesFiltered(
+        getAvailableArchivesUseCase.count(
             sumber = sumber,
-            status = "AVAILABLE",
             tahun = tahun,
             query = query
         )
@@ -73,9 +72,8 @@ class BuatBerkasUsulMusnahViewModel @Inject constructor(
         val page = array[4] as Int
         val offset = page * pageSize
 
-        repository.getArchivesFiltered(
+        getAvailableArchivesUseCase(
             sumber = sumber,
-            status = "AVAILABLE",
             tahun = tahun,
             query = query,
             limit = pageSize,

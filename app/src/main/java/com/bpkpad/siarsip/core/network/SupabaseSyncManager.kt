@@ -163,7 +163,8 @@ class SupabaseSyncManager @Inject constructor(
         tahun: String?,
         query: String?,
         limit: Int,
-        offset: Int
+        offset: Int,
+        onlyEligibleForDisposal: Boolean = false
     ): PaginatedArchivesResult = withContext(Dispatchers.IO) {
         val targetStatus = when (status) {
             "Tersedia" -> "AVAILABLE"
@@ -171,6 +172,10 @@ class SupabaseSyncManager @Inject constructor(
             "Dimusnahkan" -> "DISPOSED"
             else -> status
         }
+        val currentYear = com.bpkpad.siarsip.core.utils.JraRules.getCurrentYear()
+        val cutoffKeuangan = com.bpkpad.siarsip.core.utils.JraRules.getCutoffYearKeuangan(currentYear)
+        val cutoffNonKeuangan = com.bpkpad.siarsip.core.utils.JraRules.getCutoffYearNonKeuangan(currentYear)
+
         try {
             val result = supabase.from("archive_documents").select {
                 count(Count.EXACT)
@@ -188,6 +193,27 @@ class SupabaseSyncManager @Inject constructor(
                         or {
                             ilike("kode", "%$query%")
                             ilike("deskripsi", "%$query%")
+                        }
+                    }
+                    if (onlyEligibleForDisposal) {
+                        eq("nasib_akhir", "MUSNAH")
+                        neq("keterangan", "PERMANEN")
+                        neq("retensi_inaktif", "PERMANEN")
+                        if (sumber == "Keuangan") {
+                            lte("tahun", cutoffKeuangan.toString())
+                        } else if (!sumber.isNullOrBlank() && sumber != "Semua") {
+                            lte("tahun", cutoffNonKeuangan.toString())
+                        } else {
+                            or {
+                                and {
+                                    eq("sumber", "Keuangan")
+                                    lte("tahun", cutoffKeuangan.toString())
+                                }
+                                and {
+                                    neq("sumber", "Keuangan")
+                                    lte("tahun", cutoffNonKeuangan.toString())
+                                }
+                            }
                         }
                     }
                 }
@@ -233,14 +259,20 @@ class SupabaseSyncManager @Inject constructor(
                 tahun = if (tahun == "Semua") null else tahun,
                 query = query?.trim()?.takeIf { it.isNotBlank() },
                 limit = limit,
-                offset = offset
+                offset = offset,
+                onlyEligibleForDisposal = onlyEligibleForDisposal,
+                cutoffKeuangan = cutoffKeuangan,
+                cutoffNonKeuangan = cutoffNonKeuangan
             ).first()
 
             val roomTotalCount = arsipDao.countArchivesFiltered(
                 sumber = if (sumber == "Semua") null else sumber,
                 status = if (targetStatus == "Semua" || targetStatus == "Semua Status") null else targetStatus,
                 tahun = if (tahun == "Semua") null else tahun,
-                query = query?.trim()?.takeIf { it.isNotBlank() }
+                query = query?.trim()?.takeIf { it.isNotBlank() },
+                onlyEligibleForDisposal = onlyEligibleForDisposal,
+                cutoffKeuangan = cutoffKeuangan,
+                cutoffNonKeuangan = cutoffNonKeuangan
             ).first()
 
             PaginatedArchivesResult(roomEntities, roomTotalCount)

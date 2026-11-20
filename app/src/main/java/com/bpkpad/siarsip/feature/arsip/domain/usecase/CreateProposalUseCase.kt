@@ -1,5 +1,6 @@
 package com.bpkpad.siarsip.feature.arsip.domain.usecase
 
+import com.bpkpad.siarsip.core.utils.JraRules
 import com.bpkpad.siarsip.feature.arsip.domain.model.AuditLog
 import com.bpkpad.siarsip.feature.arsip.domain.model.BerkasUsulMusnah
 import com.bpkpad.siarsip.feature.arsip.domain.repository.ArsipRepository
@@ -7,6 +8,7 @@ import java.util.UUID
 import javax.inject.Inject
 
 class CreateProposalUseCase @Inject constructor(
+    
     private val repository: ArsipRepository
 ) {
     suspend operator fun invoke(
@@ -21,6 +23,16 @@ class CreateProposalUseCase @Inject constructor(
         return try {
             if (nomorBerkas.isBlank()) return Result.failure(Exception("Nomor berkas tidak boleh kosong"))
             if (archiveIds.isEmpty()) return Result.failure(Exception("Harus memilih minimal 1 arsip"))
+
+            // Validasi kepatuhan JRA (Defense in Depth): pastikan tidak ada arsip permanen atau belum cukup umur
+            val selectedArchives = repository.getArchivesByIds(archiveIds)
+            for (archive in selectedArchives) {
+                if (!JraRules.isEligibleForDisposal(archive)) {
+                    return Result.failure(
+                        Exception("Arsip '${archive.deskripsi}' (${archive.kode}, Tahun ${archive.tahun}) belum memenuhi masa retensi JRA atau berstatus PERMANEN sehingga tidak dapat diajukan")
+                    )
+                }
+            }
 
             val proposalId = UUID.randomUUID().toString()
             val proposal = BerkasUsulMusnah(

@@ -25,6 +25,19 @@ interface ArsipDao {
           AND (:status IS NULL OR status = :status)
           AND (:tahun IS NULL OR tahun = :tahun)
           AND (:query IS NULL OR kode LIKE '%' || :query || '%' OR deskripsi LIKE '%' || :query || '%')
+          AND (
+            :onlyEligibleForDisposal = 0 OR (
+                nasibAkhir = 'MUSNAH'
+                AND (keterangan IS NULL OR keterangan NOT LIKE '%PERMANEN%')
+                AND (retensiInaktif IS NULL OR retensiInaktif NOT LIKE '%PERMANEN%')
+                AND (
+                    CASE 
+                        WHEN (sumber = 'Keuangan' OR kode LIKE '900%') THEN CAST(tahun AS INTEGER) <= :cutoffKeuangan
+                        ELSE CAST(tahun AS INTEGER) <= :cutoffNonKeuangan
+                    END
+                )
+            )
+          )
         ORDER BY id ASC
         LIMIT :limit OFFSET :offset
     """)
@@ -34,7 +47,10 @@ interface ArsipDao {
         tahun: String?,
         query: String?,
         limit: Int,
-        offset: Int
+        offset: Int,
+        onlyEligibleForDisposal: Boolean = false,
+        cutoffKeuangan: Int = 2016,
+        cutoffNonKeuangan: Int = 2021
     ): Flow<List<ArsipEntity>>
 
     @Query("""
@@ -43,13 +59,32 @@ interface ArsipDao {
           AND (:status IS NULL OR status = :status)
           AND (:tahun IS NULL OR tahun = :tahun)
           AND (:query IS NULL OR kode LIKE '%' || :query || '%' OR deskripsi LIKE '%' || :query || '%')
+          AND (
+            :onlyEligibleForDisposal = 0 OR (
+                nasibAkhir = 'MUSNAH'
+                AND (keterangan IS NULL OR keterangan NOT LIKE '%PERMANEN%')
+                AND (retensiInaktif IS NULL OR retensiInaktif NOT LIKE '%PERMANEN%')
+                AND (
+                    CASE 
+                        WHEN (sumber = 'Keuangan' OR kode LIKE '900%') THEN CAST(tahun AS INTEGER) <= :cutoffKeuangan
+                        ELSE CAST(tahun AS INTEGER) <= :cutoffNonKeuangan
+                    END
+                )
+            )
+          )
     """)
     fun countArchivesFiltered(
         sumber: String?,
         status: String?,
         tahun: String?,
-        query: String?
+        query: String?,
+        onlyEligibleForDisposal: Boolean = false,
+        cutoffKeuangan: Int = 2016,
+        cutoffNonKeuangan: Int = 2021
     ): Flow<Int>
+
+    @Query("SELECT * FROM archives WHERE id IN (:ids) ORDER BY id ASC")
+    suspend fun getArchivesByIds(ids: List<String>): List<ArsipEntity>
 
     @Query("SELECT * FROM archives WHERE proposalId = :proposalId ORDER BY id ASC")
     fun getArchivesByProposal(proposalId: String): Flow<List<ArsipEntity>>

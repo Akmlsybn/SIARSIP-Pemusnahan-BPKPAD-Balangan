@@ -12,14 +12,17 @@ interface ArsipRepository {
         tahun: String? = null,
         query: String? = null,
         limit: Int = 25,
-        offset: Int = 0
+        offset: Int = 0,
+        onlyEligibleForDisposal: Boolean = false
     ): Flow<List<Arsip>>
     fun countArchivesFiltered(
         sumber: String? = null,
         status: String? = null,
         tahun: String? = null,
-        query: String? = null
+        query: String? = null,
+        onlyEligibleForDisposal: Boolean = false
     ): Flow<Int>
+    suspend fun getArchivesByIds(ids: List<String>): List<Arsip>
     fun getArchivesByProposal(proposalId: String): Flow<List<Arsip>>
     fun getAllProposals(): Flow<List<BerkasUsulMusnah>>
     fun getProposalById(id: String): Flow<BerkasUsulMusnah?>
