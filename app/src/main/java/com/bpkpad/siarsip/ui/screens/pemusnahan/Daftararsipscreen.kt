@@ -58,11 +58,6 @@ val defaultColumns = listOf(
     TableColumn("sumber",          "Sumber Modul",      120.dp)
 )
 
-data class FilterCondition(
-    val id: Int,
-    val field: String,
-    val value: String
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +77,6 @@ fun DaftarArsipScreen(
 
     val searchQuery by viewModel.searchQuery.collectAsState()
     val activeModul by viewModel.sumberFilter.collectAsState()
-    val activeStatus by viewModel.statusFilter.collectAsState()
     val activeYear by viewModel.tahunFilter.collectAsState()
 
     val archivesList = (archivesUiState as? ResultState.Success)?.data ?: emptyList()
@@ -90,16 +84,14 @@ fun DaftarArsipScreen(
     val visibleColumnKeys = remember { mutableStateListOf<String>().apply {
         addAll(defaultColumns.map { it.key })
     } }
-    val advancedFilters = remember { mutableStateListOf<FilterCondition>() }
 
     var showColumnSheet by remember { mutableStateOf(false) }
-    var showFilterSheet by remember { mutableStateOf(false) }
+    var showYearSheet by remember { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     val moduls = listOf("Semua", "Keuangan", "Non-Keuangan", "Peminjaman")
-    val statuses = listOf("Semua Status", "Tersedia", "Usul Musnah", "Dimusnahkan")
     val years = listOf("Semua", "2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015")
 
     val totalPages = if (totalCount == 0) 1 else (totalCount + pageSize - 1) / pageSize
@@ -153,37 +145,38 @@ fun DaftarArsipScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(CardWhite)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(top = 12.dp)
                 ) {
-                    // Row 1: Search bar + Kolom + Filter tombol
+                    // Row 1: Search bar + Kolom + Tahun tombol
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text("Cari kode atau nama arsip...", fontSize = 13.sp, color = TextHint) },
-                            leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextHint, modifier = Modifier.size(20.dp)) },
+                            placeholder = { Text("Cari kode atau nama", fontSize = 12.sp, color = TextHint) },
+                            leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextHint, modifier = Modifier.size(18.dp)) },
                             trailingIcon = if (searchQuery.isNotEmpty()) {
                                 {
                                     IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Filled.Close, null, tint = TextHint, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Filled.Close, null, tint = TextHint, modifier = Modifier.size(16.dp))
                                     }
                                 }
                             } else null,
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = fieldColors(),
-                            modifier = Modifier.weight(1f).height(52.dp)
+                            modifier = Modifier.weight(1f).height(48.dp)
                         )
 
                         // Tombol Atur Kolom
                         OutlinedButton(
                             onClick = { showColumnSheet = true },
-                            modifier = Modifier.height(52.dp),
+                            modifier = Modifier.height(48.dp),
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, BorderGray),
                             colors = ButtonDefaults.outlinedButtonColors(
@@ -197,123 +190,69 @@ fun DaftarArsipScreen(
                             Text("Kolom", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
 
-                        // Tombol Filter Lanjutan
+                        // Tombol Tahun
+                        val isYearFiltered = activeYear != "Semua" && activeYear.isNotBlank()
                         OutlinedButton(
-                            onClick = { showFilterSheet = true },
-                            modifier = Modifier.height(52.dp),
+                            onClick = { showYearSheet = true },
+                            modifier = Modifier.height(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, BorderGray),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isYearFiltered) GreenPrimary else BorderGray
+                            ),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (advancedFilters.isNotEmpty()) GreenLight else CardWhite,
-                                contentColor = if (advancedFilters.isNotEmpty()) GreenPrimary else TextHead
+                                containerColor = if (isYearFiltered) GreenLight else CardWhite,
+                                contentColor = if (isYearFiltered) GreenPrimary else TextHead
                             ),
                             contentPadding = PaddingValues(horizontal = 10.dp)
                         ) {
-                            Icon(Icons.Filled.FilterList, null, modifier = Modifier.size(16.dp))
-                            if (advancedFilters.isNotEmpty()) {
-                                Spacer(Modifier.width(4.dp))
+                            Icon(
+                                Icons.Filled.CalendarToday,
+                                null,
+                                modifier = Modifier.size(16.dp),
+                                tint = if (isYearFiltered) GreenPrimary else TextHead
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = if (isYearFiltered) activeYear else "Tahun",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    // Row 2: 4 Pilihan Modul (Semua, Keuangan, Non-Keuangan, Peminjaman)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        moduls.forEach { modul ->
+                            val isSelected = activeModul == modul
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { viewModel.setSumberFilter(modul) }
+                                    .padding(top = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = modul,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) GreenPrimary else TextBody,
+                                    modifier = Modifier.padding(bottom = 6.dp)
+                                )
                                 Box(
-                                    modifier = Modifier.size(16.dp).background(GreenPrimary, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("${advancedFilters.size}", fontSize = 9.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-
-                    // Row 2: Filter Modul (Sumber) & Filter Status Dropdown
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Filter Modul
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("MODUL:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextHint)
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                items(moduls) { modul ->
-                                    FilterPill(
-                                        label = modul,
-                                        isActive = activeModul == modul,
-                                        onClick = { viewModel.setSumberFilter(modul) }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Filter Status Dropdown
-                        var statusDropdownExpanded by remember { mutableStateOf(false) }
-                        val currentStatusDisplayLabel = when (activeStatus) {
-                            "AVAILABLE" -> "Tersedia"
-                            "PROPOSED" -> "Usul Musnah"
-                            "DISPOSED" -> "Dimusnahkan"
-                            "Semua" -> "Semua Status"
-                            else -> activeStatus.ifBlank { "Semua Status" }
-                        }
-
-                        Box {
-                            OutlinedButton(
-                                onClick = { statusDropdownExpanded = true },
-                                modifier = Modifier.height(32.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                border = BorderStroke(1.dp, if (activeStatus != "Semua" && activeStatus != "Semua Status") GreenPrimary else BorderGray),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = if (activeStatus != "Semua" && activeStatus != "Semua Status") GreenLight else CardWhite,
-                                    contentColor = if (activeStatus != "Semua" && activeStatus != "Semua Status") GreenPrimary else TextHead
-                                ),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
-                            ) {
-                                Text(currentStatusDisplayLabel, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                                Spacer(Modifier.width(4.dp))
-                                Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
-                            }
-
-                            DropdownMenu(
-                                expanded = statusDropdownExpanded,
-                                onDismissRequest = { statusDropdownExpanded = false },
-                                modifier = Modifier.background(CardWhite),
-                                containerColor = CardWhite
-                            ) {
-                                statuses.forEach { statusOption ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = statusOption,
-                                                fontSize = 12.sp,
-                                                fontWeight = if (currentStatusDisplayLabel == statusOption) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (currentStatusDisplayLabel == statusOption) GreenPrimary else TextHead
-                                            )
-                                        },
-                                        onClick = {
-                                            statusDropdownExpanded = false
-                                            val targetValue = when (statusOption) {
-                                                "Tersedia" -> "AVAILABLE"
-                                                "Usul Musnah" -> "PROPOSED"
-                                                "Dimusnahkan" -> "DISPOSED"
-                                                else -> "Semua Status"
-                                            }
-                                            viewModel.setStatusFilter(targetValue)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Row 3: Filter Tahun
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text("TAHUN:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextHint)
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(years) { year ->
-                                FilterPill(
-                                    label = year,
-                                    isActive = activeYear == year,
-                                    onClick = { viewModel.setTahunFilter(year) }
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(2.5.dp)
+                                        .background(if (isSelected) GreenPrimary else Color.Transparent)
                                 )
                             }
                         }
@@ -463,21 +402,13 @@ fun DaftarArsipScreen(
             )
         }
 
-        // Filter Lanjutan Sheet
-        if (showFilterSheet) {
-            FilterLanjutanSheet(
-                filters = advancedFilters,
-                onAddFilter = {
-                    val newId = (advancedFilters.maxOfOrNull { it.id } ?: 0) + 1
-                    advancedFilters.add(FilterCondition(newId, "kode", ""))
-                },
-                onRemoveFilter = { id -> advancedFilters.removeAll { it.id == id } },
-                onUpdateFilter = { updated ->
-                    val idx = advancedFilters.indexOfFirst { it.id == updated.id }
-                    if (idx != -1) advancedFilters[idx] = updated
-                },
-                onReset = { advancedFilters.clear() },
-                onDismiss = { showFilterSheet = false }
+        // Year Selector Sheet
+        if (showYearSheet) {
+            YearSelectorSheet(
+                activeYear = activeYear,
+                years = years,
+                onSelectYear = { year -> viewModel.setTahunFilter(year) },
+                onDismiss = { showYearSheet = false }
             )
         }
     }
@@ -724,69 +655,121 @@ private fun ColumnSelectorSheet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterLanjutanSheet(
-    filters: List<FilterCondition>,
-    onAddFilter: () -> Unit,
-    onRemoveFilter: (Int) -> Unit,
-    onUpdateFilter: (FilterCondition) -> Unit,
-    onReset: () -> Unit,
+private fun YearSelectorSheet(
+    activeYear: String,
+    years: List<String>,
+    onSelectYear: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = CardWhite,
-        contentColor = TextHead
+        contentColor = TextHead,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(bottom = 28.dp)
         ) {
+            // Header: "Pilih tahun" (kiri) & "Tutup" (kanan)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Filter Lanjutan", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextHead)
-                TextButton(onClick = onReset) {
-                    Text("Reset Filter", fontSize = 12.sp, color = DangerText)
-                }
+                Text(
+                    text = "Pilih tahun",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextHead
+                )
+                Text(
+                    text = "Tutup",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = GreenPrimary,
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onDismiss() }
+                        .padding(4.dp)
+                )
             }
 
-            if (filters.isEmpty()) {
-                Text("Belum ada filter tambahan.", fontSize = 12.sp, color = TextHint)
-            } else {
-                filters.forEach { cond ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = cond.value,
-                            onValueChange = { onUpdateFilter(cond.copy(value = it)) },
-                            placeholder = { Text("Nilai filter...", fontSize = 12.sp) },
-                            modifier = Modifier.weight(1f).height(44.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = fieldColors()
-                        )
-                        IconButton(onClick = { onRemoveFilter(cond.id) }) {
-                            Icon(Icons.Filled.Delete, null, tint = DangerText)
-                        }
-                    }
-                }
-            }
+            HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
 
-            Button(
-                onClick = onAddFilter,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+            // Daftar tahun (Scrollable)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
             ) {
-                Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Tambah Filter Baru", fontSize = 12.sp)
+                // Opsi "Semua tahun"
+                val isSemuaSelected = activeYear == "Semua" || activeYear.isBlank()
+                item {
+                    YearItemRow(
+                        label = "Semua tahun",
+                        isSelected = isSemuaSelected,
+                        onClick = {
+                            onSelectYear("Semua")
+                            onDismiss()
+                        }
+                    )
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderGray.copy(alpha = 0.5f))
+                }
+
+                // Opsi tahun spesifik (2026, 2025, 2024, ...)
+                val yearList = years.filter { it != "Semua" }
+                items(yearList) { year ->
+                    val isSelected = activeYear == year
+                    YearItemRow(
+                        label = year,
+                        isSelected = isSelected,
+                        onClick = {
+                            onSelectYear(year)
+                            onDismiss()
+                        }
+                    )
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderGray.copy(alpha = 0.5f))
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun YearItemRow(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (isSelected) GreenLight else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) GreenPrimary else TextHead
+        )
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = "Terpilih",
+                tint = GreenPrimary,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
