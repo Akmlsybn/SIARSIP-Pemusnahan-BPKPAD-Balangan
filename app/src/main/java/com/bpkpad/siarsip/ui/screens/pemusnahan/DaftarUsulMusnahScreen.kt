@@ -60,10 +60,9 @@ fun DaftarUsulMusnahScreen(
     val proposalsList = (uiState as? ResultState.Success)?.data ?: emptyList()
 
     var searchQuery    by remember { mutableStateOf("") }
-    var activeFilter   by remember { mutableStateOf("Semua") }
     var activeYear     by remember { mutableStateOf("Semua") }
     var expandedItemId by remember { mutableStateOf<String?>(null) }
-    var showFilters    by remember { mutableStateOf(false) }
+    var showYearSheet  by remember { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
@@ -94,20 +93,47 @@ fun DaftarUsulMusnahScreen(
         }
     )
 
-    val filters = listOf("Semua", "Keuangan", "Non-Keuangan", "Peminjaman")
-    val years = remember(proposalsList) {
-        val uniqueYears = proposalsList.map { it.tanggal.substringAfterLast("/") }.distinct().sortedDescending()
-        listOf("Semua") + uniqueYears
+    // Tahun diambil secara dinamis dari daftar usul musnah yang ada
+    val availableYears = remember(proposalsList) {
+        val extractedYears = proposalsList.mapNotNull { proposal ->
+            val yearFromDate = proposal.tanggal.split("/").lastOrNull()?.trim()
+            val yearFromNomor = proposal.nomorBerkas.split("-").getOrNull(1)?.trim()
+            when {
+                !yearFromDate.isNullOrBlank() && yearFromDate.length == 4 && yearFromDate.all { it.isDigit() } -> yearFromDate
+                !yearFromNomor.isNullOrBlank() && yearFromNomor.length == 4 && yearFromNomor.all { it.isDigit() } -> yearFromNomor
+                proposal.createdAt > 0 -> {
+                    val cal = java.util.Calendar.getInstance().apply { timeInMillis = proposal.createdAt }
+                    cal.get(java.util.Calendar.YEAR).toString()
+                }
+                else -> null
+            }
+        }.distinct().sortedDescending()
+        listOf("Semua") + extractedYears
+    }
+
+    LaunchedEffect(availableYears) {
+        if (activeYear != "Semua" && activeYear !in availableYears) {
+            activeYear = "Semua"
+        }
     }
 
     val filteredList = proposalsList.filter { item ->
-        val itemYear = item.tanggal.substringAfterLast("/")
-        val matchFilter = activeFilter == "Semua" || item.sumberModul == activeFilter
+        val yearFromDate = item.tanggal.split("/").lastOrNull()?.trim()
+        val yearFromNomor = item.nomorBerkas.split("-").getOrNull(1)?.trim()
+        val itemYear = when {
+            !yearFromDate.isNullOrBlank() && yearFromDate.length == 4 && yearFromDate.all { it.isDigit() } -> yearFromDate
+            !yearFromNomor.isNullOrBlank() && yearFromNomor.length == 4 && yearFromNomor.all { it.isDigit() } -> yearFromNomor
+            item.createdAt > 0 -> {
+                val cal = java.util.Calendar.getInstance().apply { timeInMillis = item.createdAt }
+                cal.get(java.util.Calendar.YEAR).toString()
+            }
+            else -> ""
+        }
         val matchYear   = activeYear == "Semua" || itemYear == activeYear
         val matchSearch = searchQuery.isBlank() ||
                 item.nomorBerkas.contains(searchQuery, ignoreCase = true) ||
                 item.perihal.contains(searchQuery, ignoreCase = true)
-        matchFilter && matchYear && matchSearch
+        matchYear && matchSearch
     }
 
     val allMatchingArchives = filteredList.flatMap { it.archives }
@@ -153,9 +179,7 @@ fun DaftarUsulMusnahScreen(
             },
             topBar = {
                 DaftarTopBar(
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    showFilters = showFilters,
-                    onToggleFilters = { showFilters = !showFilters }
+                    onMenuClick = { scope.launch { drawerState.open() } }
                 )
             },
             floatingActionButton = {
@@ -184,72 +208,18 @@ fun DaftarUsulMusnahScreen(
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
 
-                // ── Search bar ────────────────────────────────
+                // ── Search & Tahun Bar ────────────────────────
                 item {
-                    SearchBar(
+                    SearchAndYearBar(
                         query         = searchQuery,
                         onQueryChange = {
                             searchQuery    = it
                             expandedItemId = null
-                        }
+                        },
+                        activeYear    = activeYear,
+                        onYearClick   = { showYearSheet = true }
                     )
                     Spacer(Modifier.height(10.dp))
-                }
-
-                if (showFilters) {
-                    // Filter modul
-                    item {
-                        Column {
-                            Text(
-                                "MODUL",
-                                fontSize      = 9.sp,
-                                fontWeight    = FontWeight.Bold,
-                                color         = TextHint,
-                                letterSpacing = 0.7.sp,
-                                modifier      = Modifier.padding(bottom = 6.dp, start = 2.dp)
-                            )
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                items(filters) { filter ->
-                                    FilterChipItem(
-                                        label    = filter,
-                                        isActive = activeFilter == filter,
-                                        onClick  = {
-                                            activeFilter   = filter
-                                            expandedItemId = null
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(10.dp))
-                    }
-
-                    // Filter tahun
-                    item {
-                        Column {
-                            Text(
-                                "TAHUN",
-                                fontSize      = 9.sp,
-                                fontWeight    = FontWeight.Bold,
-                                color         = TextHint,
-                                letterSpacing = 0.7.sp,
-                                modifier      = Modifier.padding(bottom = 6.dp, start = 2.dp)
-                            )
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                items(years) { year ->
-                                    FilterChipItem(
-                                        label    = year,
-                                        isActive = activeYear == year,
-                                        onClick  = {
-                                            activeYear     = year
-                                            expandedItemId = null
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(10.dp))
-                    }
                 }
 
                 // ── Stat chips ────────────────────────────────
@@ -401,17 +371,27 @@ fun DaftarUsulMusnahScreen(
             }
         }
     }
+
+    if (showYearSheet) {
+        YearSelectorSheet(
+            activeYear   = activeYear,
+            years        = availableYears,
+            onSelectYear = { selected ->
+                activeYear     = selected
+                expandedItemId = null
+            },
+            onDismiss    = { showYearSheet = false }
+        )
+    }
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Top Bar — hamburger kiri, filter kanan
+//  Top Bar — hamburger kiri
 // ─────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DaftarTopBar(
-    onMenuClick: () -> Unit,
-    showFilters: Boolean,
-    onToggleFilters: () -> Unit
+    onMenuClick: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -438,15 +418,6 @@ private fun DaftarTopBar(
                 )
             }
         },
-        actions = {
-            IconButton(onClick = onToggleFilters) {
-                Icon(
-                    Icons.Filled.FilterList,
-                    contentDescription = "Filter",
-                    tint = if (showFilters) GreenLight else Color.White
-                )
-            }
-        },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = GreenPrimary
         )
@@ -454,90 +425,216 @@ private fun DaftarTopBar(
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Search Bar
+//  Search & Tahun Bar
 // ─────────────────────────────────────────────────────────────
 @Composable
-private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
-    OutlinedTextField(
-        value          = query,
-        onValueChange  = onQueryChange,
-        placeholder    = {
-            Text(
-                "Cari kode klasifikasi atau nama arsip...",
-                fontSize = 13.sp,
-                color    = TextHint
-            )
-        },
-        leadingIcon = {
-            Icon(
-                Icons.Filled.Search,
-                contentDescription = null,
-                tint     = TextHint,
-                modifier = Modifier.size(20.dp)
-            )
-        },
-        trailingIcon = if (query.isNotEmpty()) {
-            {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(
-                        Icons.Filled.Close,
-                        contentDescription = "Hapus",
-                        tint     = TextHint,
-                        modifier = Modifier.size(18.dp)
-                    )
+private fun SearchAndYearBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    activeYear: String,
+    onYearClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedTextField(
+            value          = query,
+            onValueChange  = onQueryChange,
+            placeholder    = {
+                Text(
+                    "Cari kode atau nama arsip",
+                    fontSize = 13.sp,
+                    color    = TextHint
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Filled.Search,
+                    contentDescription = null,
+                    tint     = TextHint,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            trailingIcon = if (query.isNotEmpty()) {
+                {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Hapus",
+                            tint     = TextHint,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-            }
-        } else null,
-        singleLine = true,
-        shape      = RoundedCornerShape(12.dp),
-        colors     = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor      = GreenPrimary,
-            unfocusedBorderColor    = BorderGray,
-            focusedContainerColor   = CardWhite,
-            unfocusedContainerColor = CardWhite,
-            focusedTextColor        = TextHead,
-            unfocusedTextColor      = TextHead,
-            cursorColor             = GreenPrimary
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-    )
+            } else null,
+            singleLine = true,
+            shape      = RoundedCornerShape(12.dp),
+            colors     = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor      = GreenPrimary,
+                unfocusedBorderColor    = BorderGray,
+                focusedContainerColor   = CardWhite,
+                unfocusedContainerColor = CardWhite,
+                focusedTextColor        = TextHead,
+                unfocusedTextColor      = TextHead,
+                cursorColor             = GreenPrimary
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+        )
+
+        val isYearFiltered = activeYear != "Semua" && activeYear.isNotBlank()
+        OutlinedButton(
+            onClick = onYearClick,
+            modifier = Modifier.height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(
+                1.dp,
+                if (isYearFiltered) GreenPrimary else BorderGray
+            ),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = if (isYearFiltered) GreenLight else CardWhite,
+                contentColor = if (isYearFiltered) GreenPrimary else TextHead
+            ),
+            contentPadding = PaddingValues(horizontal = 12.dp)
+        ) {
+            Icon(
+                Icons.Filled.CalendarToday,
+                contentDescription = "Tahun",
+                modifier = Modifier.size(16.dp),
+                tint = if (isYearFiltered) GreenPrimary else TextHead
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = if (isYearFiltered) activeYear else "Tahun",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Filter Chip
+//  Year Selector Modal Bottom Sheet
 // ─────────────────────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterChipItem(
+private fun YearSelectorSheet(
+    activeYear: String,
+    years: List<String>,
+    onSelectYear: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = CardWhite,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 28.dp)
+        ) {
+            // Header: "Pilih tahun" (kiri) & "Tutup" (kanan)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Pilih tahun",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextHead
+                )
+                Text(
+                    text = "Tutup",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = GreenPrimary,
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onDismiss() }
+                        .padding(4.dp)
+                )
+            }
+
+            HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
+
+            // Daftar tahun (Scrollable)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+            ) {
+                // Opsi "Semua tahun"
+                val isSemuaSelected = activeYear == "Semua" || activeYear.isBlank()
+                item {
+                    YearItemRow(
+                        label = "Semua tahun",
+                        isSelected = isSemuaSelected,
+                        onClick = {
+                            onSelectYear("Semua")
+                            onDismiss()
+                        }
+                    )
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderGray.copy(alpha = 0.5f))
+                }
+
+                // Opsi tahun dinamis berdasarkan data usul musnah yang ada
+                val yearList = years.filter { it != "Semua" }
+                items(yearList) { year ->
+                    val isSelected = activeYear == year
+                    YearItemRow(
+                        label = year,
+                        isSelected = isSelected,
+                        onClick = {
+                            onSelectYear(year)
+                            onDismiss()
+                        }
+                    )
+                    HorizontalDivider(thickness = 0.5.dp, color = BorderGray.copy(alpha = 0.5f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun YearItemRow(
     label: String,
-    isActive: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Box(
+    Row(
         modifier = Modifier
-            .background(
-                if (isActive) GreenPrimary else CardWhite,
-                RoundedCornerShape(9999.dp)
-            )
-            .border(
-                1.5.dp,
-                if (isActive) GreenPrimary else BorderGray,
-                RoundedCornerShape(9999.dp)
-            )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication        = null,
-                onClick           = onClick
-            )
-            .padding(horizontal = 15.dp, vertical = 7.dp)
+            .fillMaxWidth()
+            .background(if (isSelected) GreenLight else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text       = label,
-            fontSize   = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color      = if (isActive) Color.White else TextBody
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) GreenPrimary else TextHead
         )
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = "Terpilih",
+                tint = GreenPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
