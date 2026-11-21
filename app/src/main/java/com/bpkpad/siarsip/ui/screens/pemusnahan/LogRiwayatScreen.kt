@@ -150,7 +150,6 @@ fun LogRiwayatScreen(
                     }
 
                     val totalActivities = remember(groupedMap) { groupedMap.values.flatten().size }
-                    val totalUsers = remember(groupedMap) { groupedMap.values.flatten().map { it.person }.distinct().size }
 
                     LazyColumn(
                         modifier = Modifier
@@ -165,25 +164,45 @@ fun LogRiwayatScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
 
-                        // ── Stats summary ────────────────────────────
+                        // ── Stats summary (Hanya Total Aktivitas) ────
                         item {
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                LogStatBox(
-                                    value    = "$totalActivities",
-                                    label    = "Total Aktivitas",
-                                    icon     = Icons.Filled.History,
-                                    bgColor  = CardWhite,
-                                    color    = TextHead,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                LogStatBox(
-                                    value    = "$totalUsers",
-                                    label    = "Pengguna",
-                                    icon     = Icons.Filled.Group,
-                                    bgColor  = BlueBg,
-                                    color    = BlueText,
-                                    modifier = Modifier.weight(1f)
-                                )
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape    = RoundedCornerShape(14.dp),
+                                colors   = CardDefaults.cardColors(containerColor = CardWhite),
+                                border   = BorderStroke(1.dp, BorderGray)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.History,
+                                            contentDescription = null,
+                                            tint = TextHead,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = "Total aktivitas",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = TextHead
+                                        )
+                                    }
+                                    Text(
+                                        text = "$totalActivities",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextHead
+                                    )
+                                }
                             }
                         }
 
@@ -216,19 +235,44 @@ fun LogRiwayatScreen(
                             )
                         }
 
-                        // ── Filter chips ──────────────────────────────
+                        // ── Tab Categories ────────────────────────────
                         item {
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                items(filters) { filter ->
-                                    LogFilterChip(
-                                        label    = filter,
-                                        isActive = activeFilter == filter,
-                                        onClick  = {
-                                            activeFilter = filter
-                                            expandedId   = null
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    filters.forEach { filter ->
+                                        val isSelected = activeFilter == filter
+                                        Column(
+                                            modifier = Modifier
+                                                .width(IntrinsicSize.Min)
+                                                .clickable(
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null
+                                                ) {
+                                                    activeFilter = filter
+                                                    expandedId   = null
+                                                },
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = filter,
+                                                fontSize = 12.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isSelected) GreenPrimary else TextBody,
+                                                modifier = Modifier.padding(bottom = 6.dp)
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(2.5.dp)
+                                                    .background(if (isSelected) GreenPrimary else Color.Transparent)
+                                            )
                                         }
-                                    )
+                                    }
                                 }
+                                HorizontalDivider(thickness = 0.5.dp, color = BorderGray)
                             }
                         }
 
