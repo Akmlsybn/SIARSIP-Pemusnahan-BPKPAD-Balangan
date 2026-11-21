@@ -187,7 +187,8 @@ fun BeritaAcaraScreen(
                         matchFilter && matchSearch
                     }
 
-                    val countTahunIni = beritaAcaraList.count { it.tahun == "2025" }
+                    val currentYear = com.bpkpad.siarsip.core.utils.JraRules.getCurrentYear().toString()
+                    val countTahunIni = beritaAcaraList.count { it.tahun == currentYear }
                     val totalArsip    = beritaAcaraList.sumOf { it.jumlahArsip }
 
                     LazyColumn(
@@ -778,19 +779,18 @@ private fun BeritaAcaraCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
         border = BorderStroke(1.dp, BorderGray)
     ) {
         Column {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 DateBox(dateMultiline = ba.tanggalShort)
 
@@ -799,19 +799,32 @@ private fun BeritaAcaraCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(ba.nomor, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                            color = TextHead, modifier = Modifier.weight(1f))
+                        Text(
+                            text = ba.nomor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextHead,
+                            modifier = Modifier.weight(1f)
+                        )
                         Row(
                             modifier = Modifier
                                 .background(GreenLight, RoundedCornerShape(9999.dp))
-                                .padding(horizontal = 7.dp, vertical = 2.dp),
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
-                            Icon(Icons.Filled.Verified, null,
-                                tint = GreenPrimary, modifier = Modifier.size(10.dp))
-                            Text("Tervalidasi", fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold, color = GreenPrimary)
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = GreenPrimary,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                text = "Tervalidasi",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = GreenPrimary
+                            )
                         }
                     }
 
@@ -821,19 +834,37 @@ private fun BeritaAcaraCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Icon(Icons.Filled.Link, null,
-                            tint = TextHint, modifier = Modifier.size(11.dp))
-                        Text(ba.berkasNomor, fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold, color = GreenPrimary)
-                        Text("•", fontSize = 10.sp, color = TextHint)
-                        Text("${ba.jumlahArsip} arsip", fontSize = 10.sp, color = TextBody)
+                        Icon(
+                            imageVector = Icons.Filled.Link,
+                            contentDescription = null,
+                            tint = TextHint,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = ba.berkasNomor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (ba.berkasNomor != "-") GreenPrimary else TextHint
+                        )
+                        Text("•", fontSize = 11.sp, color = TextHint)
+                        Text(
+                            text = "${ba.jumlahArsip} arsip",
+                            fontSize = 11.sp,
+                            color = TextBody
+                        )
                     }
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(6.dp))
 
-                    Text(ba.perihal, fontSize = 12.sp, fontWeight = FontWeight.Medium,
-                        color = TextHead, lineHeight = 17.sp,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        text = ba.perihal,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextHead,
+                        lineHeight = 18.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 
@@ -851,37 +882,64 @@ private fun BeritaAcaraCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
-                    Icon(Icons.Filled.Article, null,
-                        tint = GreenPrimary, modifier = Modifier.size(15.dp))
-                    Text("Lihat detail lengkap", fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold, color = GreenPrimary)
+                    Icon(
+                        imageVector = Icons.Filled.Article,
+                        contentDescription = null,
+                        tint = GreenPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Lihat detail lengkap",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = GreenPrimary
+                    )
                 }
-                Icon(Icons.Filled.ChevronRight, null,
-                    tint = GreenPrimary, modifier = Modifier.size(20.dp))
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = GreenPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Date Box
+//  Date Box / Thumbnail BA
 // ─────────────────────────────────────────────────────────────
 @Composable
 private fun DateBox(dateMultiline: String) {
     val parts = dateMultiline.split("\n")
+    val day = parts.getOrNull(0)?.trim() ?: ""
+    val rawMonth = parts.getOrNull(1)?.trim() ?: ""
+    val month = rawMonth.lowercase().replaceFirstChar { it.uppercase() }
+    val year = parts.getOrNull(2)?.trim() ?: ""
+    val monthYear = if (year.isNotBlank()) "$month $year" else month
+
     Column(
         modifier = Modifier
-            .size(60.dp)
-            .background(GreenPrimary, RoundedCornerShape(11.dp)),
+            .size(width = 66.dp, height = 66.dp)
+            .background(GreenPrimary, RoundedCornerShape(14.dp)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(parts.getOrElse(0) { "" }, fontSize = 19.sp, fontWeight = FontWeight.Bold,
-            color = Color.White, lineHeight = 22.sp)
-        Text(parts.getOrElse(1) { "" }, fontSize = 9.sp, fontWeight = FontWeight.Bold,
-            color = Color.White.copy(alpha = 0.85f), letterSpacing = 0.7.sp)
-        Text(parts.getOrElse(2) { "" }, fontSize = 9.sp,
-            color = Color.White.copy(alpha = 0.7f))
+        Text(
+            text = day,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            lineHeight = 24.sp
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = monthYear,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White.copy(alpha = 0.9f),
+            maxLines = 1
+        )
     }
 }
 
